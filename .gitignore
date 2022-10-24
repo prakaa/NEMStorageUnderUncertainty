@@ -1,2 +1,4 @@
 # Package Compiler system image
 *.so
+# Built docs
+docs/build/
