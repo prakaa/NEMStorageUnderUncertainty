@@ -1,5 +1,3 @@
-using DataFrames, Dates, Parquet
-
 const DTFMT::String = "yyyy/mm/dd HH:MM:SS"
 
 """
@@ -47,7 +45,7 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
 
     function _drop_overlapping_PD_forecasts(pd_df::DataFrame)
         pd_df[!, :ahead_time] = pd_df[:, :forecasted_time] .- pd_df[:, :actual_run_time]
-        filtered_pd_df = filter(:ahead_time => dt -> dt > Dates.Hour(1), pd_df)
+        filtered_pd_df = filter(:ahead_time => dt -> dt > Hour(1), pd_df)
         return filtered_pd_df
     end
 
@@ -73,9 +71,9 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
         )
     end
     # PD actual run time is 30 minutes before nominal run time
-    pd_df[!, :actual_run_time] = pd_df[!, :run_time] .- Dates.Minute(30)
+    pd_df[!, :actual_run_time] = pd_df[!, :run_time] .- Minute(30)
     # P5MIN actual run time is 5 minutes before nominal run time
-    p5_df[!, :actual_run_time] = p5_df[!, :run_time] .- Dates.Minute(5)
+    p5_df[!, :actual_run_time] = p5_df[!, :run_time] .- Minute(5)
     forecast_prices = _concatenate_forecast_prices(pd_df, p5_df)
     return forecast_prices
 end
