@@ -1,10 +1,14 @@
 module NEMStorageUnderUncertainty
 
 # Exports
-## Storage Formulations
+## Storage Devices
 export BESS
 
 # Includes
-## StorageFormulation
+## Storage Devices
 include("devices.jl")
+## Data Management
+include("data.jl")
+## Model Components
+include("model.jl")
 end
