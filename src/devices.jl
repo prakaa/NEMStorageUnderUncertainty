@@ -8,6 +8,7 @@ mutable struct BESS <: StorageDevices
     const η_charge::Float64
     const η_discharge::Float64
     const soc₀::Float64
+    throughput::Float64
     @doc """
         BESS(
             power_capacity::Float64,
@@ -29,11 +30,12 @@ mutable struct BESS <: StorageDevices
       * `soc_max`: Maximum allowable operational state of charge (MWh)
       * `η_charge`: Charging efficiency (0-1)
       * `η_discharge`: Discharge efficiency (0-1)
-      * `soc₀`: Initial state of charge (at beginning of simulation) (MWh)
+      * `soc₀`: Initial state of charge (MWh)
+      * `throughput`: Energy throughput (MWh)
 
     # Returns
 
-    A BESS with mutable `energy_capacity`, `soc_min` and `soc_max`.
+    A BESS with mutable `energy_capacity`, `soc_min`, `soc_max` and `throughput`.
     """
     function BESS(
         power_capacity::Float64,
@@ -42,7 +44,8 @@ mutable struct BESS <: StorageDevices
         soc_max::Float64,
         η_charge::Float64,
         η_discharge::Float64,
-        soc₀::Float64
+        soc₀::Float64;
+        throughput::Float64 = 0.0
     )
         if any([cap ≤ 0 for cap in (power_capacity, energy_capacity)])
             throw(DomainError("Capacities should be > 0"))
@@ -50,6 +53,11 @@ mutable struct BESS <: StorageDevices
         if any([soc < 0 for soc in (soc₀, soc_min, soc_max)])
             throw(
                 DomainError("SoC values should be ≥ 0")
+            )
+        end
+        if throughput < 0
+            throw(
+                DomainError("Energy throughput should be ≥ 0")
             )
         end
         if any([soc > energy_capacity for soc in (soc_min, soc_max, soc₀)])
@@ -68,8 +76,8 @@ mutable struct BESS <: StorageDevices
             )
         end
         return new(
-            power_capacity, energy_capacity,
-            soc_min, soc_max, η_charge, η_discharge, soc₀
+            power_capacity, energy_capacity, soc_min, soc_max,
+            η_charge, η_discharge, soc₀, throughput
         )
     end
 end
