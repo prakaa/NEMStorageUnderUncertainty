@@ -1,4 +1,15 @@
 # Package Compiler system image
 *.so
+
 # Built docs
 docs/build/
+
+# virtualenv for Python
+data_scripts/NEMSUU_venv
+
+# misc Python file
+**/*.egg-info
+**/__pycache__
+
+# data
+data/*
