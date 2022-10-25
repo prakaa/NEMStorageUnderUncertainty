@@ -1,6 +1,6 @@
-abstract type StorageDevices end
+abstract type StorageDevice end
 
-mutable struct BESS <: StorageDevices
+mutable struct BESS <: StorageDevice
     const power_capacity::Float64
     energy_capacity::Float64
     soc_min::Float64
