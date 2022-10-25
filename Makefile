@@ -1,4 +1,4 @@
-.PHONY: install_get_NEM_data
+.PHONY: install_get_NEM_data, docs
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -12,7 +12,6 @@ PYTHON_INTERPRETER = python3
 # COMMANDS                                                                      #
 #################################################################################
 
-## Installs the get-NEM-data reqs and command line commands
 install_get_NEM_data:
 	pip install virtualenv
 	@$(PYTHON_INTERPRETER) -m venv data_scripts/NEMSUU_venv
@@ -21,6 +20,11 @@ install_get_NEM_data:
 ## Gets actual and forecast NEM data
 get_NEM_data: install_get_NEM_data
 	. data_scripts/NEMSUU_venv/bin/activate; NEMSUU-get-NEM-data
+
+## Make documentation
+docs:
+	julia docs/make.jl
+
 
 #################################################################################
 # PROJECT RULES                                                                 #
