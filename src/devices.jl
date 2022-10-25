@@ -7,7 +7,7 @@ mutable struct BESS <: StorageDevice
     soc_max::Float64
     const η_charge::Float64
     const η_discharge::Float64
-    const soc₀::Float64
+    soc₀::Float64
     throughput::Float64
     @doc """
         BESS(
@@ -35,7 +35,11 @@ mutable struct BESS <: StorageDevice
 
     # Returns
 
-    A BESS with mutable `energy_capacity`, `soc_min`, `soc_max` and `throughput`.
+    A BESS. The following properties are immutable:
+      * `power_capacity`
+      * `η_charge`
+      * `η_discharge`
+    """
     """
     function BESS(
         power_capacity::Float64,
