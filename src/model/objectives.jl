@@ -21,7 +21,7 @@ Adds a standard revenue-maximising objective function:
 function _add_objective_standard!(
     model::JuMP.Model, prices::Vector{AbstractFloat}, times::Vector{DateTime}, τ::Float64
 )
-    @objective(
+    JuMP.@objective(
         model,
         Max,
         sum(
