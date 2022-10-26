@@ -19,7 +19,12 @@ include("devices.jl")
 ## Data Management
 include("data.jl")
 ## Model Components
-include("model/base_model.jl")
+include("model/model_formulations.jl")
 include("model/variables.jl")
 include("model/constraints.jl")
+include("model/objectives.jl")
+## Simulations
+include("simulations.jl")
+## Utilities
+include("utils.jl")
 end
