@@ -56,8 +56,6 @@ end
 Adds the following constraint to `model`:
 ``e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0``
 
-``\tau`` is calculated dynamically (i.e. using `times`) and has units hours.
-
 ``\eta`` are obtained from `storage`.
 
 # Arguments
@@ -67,7 +65,7 @@ Adds the following constraint to `model`:
   * `times`: A `Vector` of `DateTime`s
 """
 function _add_constraint_intertemporal_soc!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
+    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}, τ::Float64
 )
     η_charge = storage.η_charge
     η_discharge = storage.η_discharge
@@ -84,17 +82,9 @@ function _add_constraint_intertemporal_soc!(
                 -
                 charge_mw[times[_get_times_index(t, times)]] * # calculate charge
                 η_charge *
-                Minute(
-                    times[_get_times_index(t, times)] -
-                    times[_get_times_index(t, times) - 1],
-                ).value / 60.0  # dynamically calculate τ as hours
-                +
+                τ +
                 discharge_mw[times[_get_times_index(t, times)]] / # calculate discharge
-                η_discharge *
-                Minute(
-                    times[_get_times_index(t, times)] -
-                    times[_get_times_index(t, times) - 1],
-                ).value / 60.0 # dynamically calculate τ as hours
+                η_discharge * τ
                 == 0
             )
         )
