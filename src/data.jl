@@ -145,7 +145,7 @@ function get_prices_by_times(
     if !isnothing(run_times)
         @assert run_times[1] ≤ run_times[2] "Start time should be ≤ end time"
         @assert prices.run_start ≤ run_times[1] "Start time before data start"
-        @assert prices.run_end ≤ run_times[end] "End time after data end"
+        @assert prices.run_end ≥ run_times[end] "End time after data end"
         forecast_prices = filter(
             :actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_prices
         )
@@ -153,7 +153,7 @@ function get_prices_by_times(
     if !isnothing(forecasted_times)
         @assert forecasted_times[1] ≤ forecasted_times[2] "Start time should be ≤ end time"
         @assert prices.forecasted_start ≤ forecasted_times[1] "Start time before data start"
-        @assert prices.forecasted_end ≤ forecasted_times[end] "End time after data end"
+        @assert prices.forecasted_end ≥ forecasted_times[end] "End time after data end"
         forecast_prices = filter(
             :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
             forecast_prices,
@@ -191,7 +191,7 @@ function get_prices_by_times(
 )
     @assert times[1] ≤ times[2] "Start time should be ≤ end time"
     @assert prices.start_time ≤ times[1] "Start time before data start"
-    @assert prices.end_time ≤ times[end] "End time after data end"
+    @assert prices.end_time ≥ times[end] "End time after data end"
     actual_prices = prices.data
     actual_prices = filter(:SETTLEMENTDATE => dt -> times[1] ≤ dt ≤ times[2], actual_prices)
     (start_time, end_time) = (
