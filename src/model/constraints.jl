@@ -16,13 +16,16 @@ Adds two constraints to `model`:
 function _add_constraints_charge_state!(
     model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
 )
-    power_cap = storage.power_cap
+    discharge_mw = model[:discharge_mw]
+    charge_mw = model[:charge_mw]
+    charge_state = model[:charge_state]
+    power_capacity = storage.power_capacity
     JuMP.@constraints(
         model,
         begin
             discharge_operation[t=times],
-            discharge_mw[t] - power_cap * (1 - charge_state[t]) ≤ 0
-            charge_operation[t=times], charge_mw[t] - power_cap * charge_state[t] ≤ 0
+            discharge_mw[t] - power_capacity * (1 - charge_state[t]) ≤ 0
+            charge_operation[t=times], charge_mw[t] - power_capacity * charge_state[t] ≤ 0
         end
     )
 end
@@ -44,6 +47,7 @@ Adds the following constraint to `model`: ``e_1 = e_0``, where ``e_0`` is obtain
 function _add_constraint_initial_soc!(
     model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
 )
+    soc_mwh = model[:soc_mwh]
     soc₀ = storage.soc₀
     JuMP.@constraint(model, initial_soc, soc_mwh[times[1]] == soc₀)
 end
@@ -69,6 +73,9 @@ function _add_constraint_intertemporal_soc!(
 )
     η_charge = storage.η_charge
     η_discharge = storage.η_discharge
+    soc_mwh = model[:soc_mwh]
+    charge_mw = model[:charge_mw]
+    discharge_mw = model[:discharge_mw]
     if length(times) < 2
         return nothing
     else
@@ -82,10 +89,8 @@ function _add_constraint_intertemporal_soc!(
                 -
                 charge_mw[times[_get_times_index(t, times)]] * # calculate charge
                 η_charge *
-                τ +
-                discharge_mw[times[_get_times_index(t, times)]] / # calculate discharge
-                η_discharge * τ
-                == 0
+                τ + discharge_mw[times[_get_times_index(t, times)]] / # calculate discharge
+                η_discharge * τ == 0
             )
         )
     end
