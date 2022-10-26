@@ -42,14 +42,13 @@ Compiled forecast data has actual run times, forecasted times, regions and their
 corresponding energy prices.
 """
 function get_all_forecast_prices(pd_path::String, p5_path::String)
-
     function _drop_overlapping_PD_forecasts(pd_df::DataFrame)
         pd_df[!, :ahead_time] = pd_df[:, :forecasted_time] .- pd_df[:, :actual_run_time]
         filtered_pd_df = filter(:ahead_time => dt -> dt > Hour(1), pd_df)
         return filtered_pd_df
     end
 
-    function _concatenate_forecast_prices(pd_df:: DataFrame, p5_df::DataFrame)
+    function _concatenate_forecast_prices(pd_df::DataFrame, p5_df::DataFrame)
         pd_df = _drop_overlapping_PD_forecasts(pd_df)
         pd_prices = pd_df[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
         p5_prices = p5_df[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
@@ -66,9 +65,8 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
     # unix2datetime converts unix epoch to DateTime
     for df in (p5_df, pd_df)
         filter!(:INTERVENTION => x -> x == 0, df)
-        df[!, [:run_time, :forecasted_time]] = unix2datetime.(
-            df[!, [:run_time, :forecasted_time]] ./ 10^6 # convert microseconds to seconds
-        )
+        df[!, [:run_time, :forecasted_time]] = # convert microseconds to seconds
+            unix2datetime.(df[!, [:run_time, :forecasted_time]] ./ 10^6)
     end
     # PD actual run time is 30 minutes before nominal run time
     pd_df[!, :actual_run_time] = pd_df[!, :run_time] .- Minute(30)
@@ -100,8 +98,8 @@ Filtered forecast prices
 """
 function get_forecast_prices_by_times(
     forecast_prices::DataFrame;
-    forecasted_times::Union{Tuple{DateTime, DateTime}, Nothing}=nothing,
-    run_times::Union{Tuple{DateTime, DateTime}, Nothing}=nothing
+    forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
+    run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
 )
     if isnothing(run_times) && isnothing(forecasted_times)
         ArgumentError("Supply either run or forecasted times")
@@ -109,15 +107,14 @@ function get_forecast_prices_by_times(
     if !isnothing(run_times)
         @assert run_times[1] ≤ run_times[2] "Start time should be ≤ end time"
         forecast_prices = filter(
-            :actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2],
-            forecast_prices
+            :actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_prices
         )
     end
     if !isnothing(forecasted_times)
         @assert forecasted_times[1] ≤ forecasted_times[2] "Start time should be ≤ end time"
         forecast_prices = filter(
             :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
-            forecast_prices
+            forecast_prices,
         )
     end
     return forecast_prices
