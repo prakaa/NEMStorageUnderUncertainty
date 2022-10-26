@@ -7,6 +7,7 @@ function _initialise_model(;
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
 )
+    model = JuMP.Model()
     if silent
         JuMP.set_silent(model)
     end
@@ -36,7 +37,7 @@ end
 """
 function build_storage_model(
     storage::StorageDevice,
-    prices::Vector{AbstractFloat},
+    prices::Vector{<:Union{Missing,AbstractFloat}},
     times::Vector{DateTime},
     ::StandardFormulation,
     silent::Bool=false,
@@ -50,12 +51,15 @@ function build_storage_model(
     model = _initialise_model(;
         silent=silent, time_limit_sec=time_limit_sec, string_names=string_names
     )
+    @debug "Adding vars"
     _add_variables_power!(model, storage, times)
     _add_variable_soc!(model, storage, times)
     _add_variable_charge_state!(model, times)
+    @debug "Adding constraints"
     _add_constraints_charge_state!(model, storage, times)
     _add_constraint_intertemporal_soc!(model, storage, times, τ)
     _add_constraint_initial_soc!(model, storage, times)
-    _add_objective_standard(model, prices, times, τ)
+    @debug "Adding objective"
+    _add_objective_standard!(model, prices, times, τ)
     return model
 end
