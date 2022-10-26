@@ -40,7 +40,6 @@ mutable struct BESS <: StorageDevice
       * `η_charge`
       * `η_discharge`
     """
-    """
     function BESS(
         power_capacity::Float64,
         energy_capacity::Float64,
@@ -49,39 +48,35 @@ mutable struct BESS <: StorageDevice
         η_charge::Float64,
         η_discharge::Float64,
         soc₀::Float64;
-        throughput::Float64 = 0.0
+        throughput::Float64=0.0,
     )
         if any([cap ≤ 0 for cap in (power_capacity, energy_capacity)])
             throw(DomainError("Capacities should be > 0"))
         end
         if any([soc < 0 for soc in (soc₀, soc_min, soc_max)])
-            throw(
-                DomainError("SoC values should be ≥ 0")
-            )
+            throw(DomainError("SoC values should be ≥ 0"))
         end
         if throughput < 0
-            throw(
-                DomainError("Energy throughput should be ≥ 0")
-            )
+            throw(DomainError("Energy throughput should be ≥ 0"))
         end
         if any([soc > energy_capacity for soc in (soc_min, soc_max, soc₀)])
-            throw(
-                DomainError("SoC values should be ≤ the BESS energy capacity")
-            )
+            throw(DomainError("SoC values should be ≤ the BESS energy capacity"))
         end
         if soc_min ≥ soc_max
-            throw(
-                ArgumentError("Max SoC limit should be greater than the min SoC limit")
-            )
+            throw(ArgumentError("Max SoC limit should be greater than the min SoC limit"))
         end
         if any([(η < 0) | (η > 1) for η in (η_charge, η_discharge)])
-            throw(
-                DomainError("Efficiency values should be between 0 (0%) and 1 (100%)")
-            )
+            throw(DomainError("Efficiency values should be between 0 (0%) and 1 (100%)"))
         end
         return new(
-            power_capacity, energy_capacity, soc_min, soc_max,
-            η_charge, η_discharge, soc₀, throughput
+            power_capacity,
+            energy_capacity,
+            soc_min,
+            soc_max,
+            η_charge,
+            η_discharge,
+            soc₀,
+            throughput,
         )
     end
 end
