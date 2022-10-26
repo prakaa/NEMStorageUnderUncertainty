@@ -14,6 +14,9 @@ Obtains actual price data from `parquet` files located at `path`
 DataFrame with settlement date, region and corresponding energy prices
 """
 function get_all_actual_prices(path::String)
+    if !any([occursin(".parquet", file) for file in readdir(path)])
+        thow(ArgumentError("$path does not contain *.parquet"))
+    end
     df = DataFrame(read_parquet(path))
     filter!(:INTERVENTION => x -> x == 0, df)
     price_df = df[:, [:SETTLEMENTDATE, :REGIONID, :RRP]]
@@ -58,6 +61,11 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
         return forecast_prices
     end
 
+    for path in (p5_path, pd_path)
+        if !any([occursin(".parquet", file) for file in readdir(path)])
+            thow(ArgumentError("$path does not contain *.parquet"))
+        end
+    end
     pd_df = DataFrame(read_parquet(pd_path))
     rename!(pd_df, :PREDISPATCH_RUN_DATETIME => :run_time, :DATETIME => :forecasted_time)
     p5_df = DataFrame(read_parquet(p5_path))
