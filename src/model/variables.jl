@@ -18,12 +18,12 @@ The following variable bounds are applied:
 function _add_variables_power!(
     model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
 )
-    power_cap = storage.power_cap
+    power_capacity = storage.power_capacity
     JuMP.@variables(
         model,
         begin
-            0.0 ≤ discharge_mw[times] ≤ power_cap
-            0.0 ≤ charge_mw[times] ≤ power_cap
+            0.0 ≤ discharge_mw[times] ≤ power_capacity
+            0.0 ≤ charge_mw[times] ≤ power_capacity
         end
     )
 end
