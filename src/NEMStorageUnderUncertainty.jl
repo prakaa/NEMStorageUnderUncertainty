@@ -5,11 +5,13 @@ module NEMStorageUnderUncertainty
 export BESS
 
 # Imports
-import DataFrames: DataFrame
 import Dates: DateTime, unix2datetime, Hour, Minute
-using JuMP: JuMP
 import ParameterJuMP as PJ
 import Parquet: read_parquet
+
+# Using
+using DataFrames
+using JuMP: JuMP
 
 # Includes
 ## Storage Devices
