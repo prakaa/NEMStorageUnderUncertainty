@@ -1,4 +1,22 @@
-const DTFMT::String = "yyyy/mm/dd HH:MM:SS"
+abstract type PriceData end
+
+"""
+"""
+struct ForecastPrice <: PriceData
+    run_start::DateTime
+    run_end::DateTime
+    forecasted_start::DateTime
+    forecasted_end::DateTime
+    data::DataFrame
+end
+
+"""
+"""
+struct ActualPrice <: PriceData
+    start_time::DateTime
+    end_time::DateTime
+    data::DataFrame
+end
 
 """
     get_all_actual_prices(path::String)
@@ -20,8 +38,11 @@ function get_all_actual_prices(path::String)
     df = DataFrame(read_parquet(path))
     filter!(:INTERVENTION => x -> x == 0, df)
     price_df = df[:, [:SETTLEMENTDATE, :REGIONID, :RRP]]
-    price_df[!, :SETTLEMENTDATE] = DateTime.(price_df[!, :SETTLEMENTDATE], DTFMT)
-    return price_df
+    price_df[!, :SETTLEMENTDATE] =
+        DateTime.(price_df[!, :SETTLEMENTDATE], "yyyy/mm/dd HH:MM:SS")
+    start_time = sort(price_df[!, :SETTLEMENTDATE])[1]
+    end_time = sort(price_df[!, :SETTLEMENTDATE])[end]
+    return ActualPrice(start_time, end_time, price_df)
 end
 
 """
@@ -81,14 +102,22 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
     # P5MIN actual run time is 5 minutes before nominal run time
     p5_df[!, :actual_run_time] = p5_df[!, :run_time] .- Minute(5)
     forecast_prices = _concatenate_forecast_prices(pd_df, p5_df)
-    return forecast_prices
+    (run_start, run_end) = (
+        forecast_prices.actual_run_time[0], forecast_prices.actual_run_time[1]
+    )
+    (forecasted_start, forecasted_end) = (
+        forecast_prices.forecasted_time[0], forecast_prices.forecasted_time[1]
+    )
+    return ForecastPrice(
+        run_start, run_end, forecasted_start, forecasted_end, forecast_prices
+    )
 end
 
 """
-    get_forecast_prices_by_times(
-    forecast_prices::DataFrame,
-    forecasted_times::Tuple{DateTime, DateTime}=nothing,
-    run_times::Tuple{DateTime, DateTime}=nothing
+    get_prices_by_times(
+    prices::ForecastPrice;
+    forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
+    run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
     )
 
 Filters forecast prices based on supplied `run_times` (start, end) and `forecasted_times`
@@ -96,34 +125,77 @@ Filters forecast prices based on supplied `run_times` (start, end) and `forecast
 
 # Arguments
 
-  * `forecast_prices`: DataFrame produced by [`get_all_forecast_prices`](@ref)
+  * `prices`: `ForecastPrice` produced by [`get_all_forecast_prices`](@ref)
   * `forecasted_times`: (start_time, end_time), inclusive
   * `run_times`: (start_time, end_time), inclusive
 
 # Returns
 
-Filtered forecast prices
+Filtered [`ForecastPrice`](@ref)
 """
-function get_forecast_prices_by_times(
-    forecast_prices::DataFrame;
+function get_prices_by_times(
+    prices::ForecastPrice;
     forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
     run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
 )
     if isnothing(run_times) && isnothing(forecasted_times)
         ArgumentError("Supply either run or forecasted times")
     end
+    forecast_prices = prices.data
     if !isnothing(run_times)
         @assert run_times[1] ≤ run_times[2] "Start time should be ≤ end time"
+        @assert prices.run_start ≤ run_times[1] "Start time before data start"
+        @assert prices.run_end ≤ run_times[end] "End time after data end"
         forecast_prices = filter(
             :actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_prices
         )
     end
     if !isnothing(forecasted_times)
         @assert forecasted_times[1] ≤ forecasted_times[2] "Start time should be ≤ end time"
+        @assert prices.forecasted_start ≤ forecasted_times[1] "Start time before data start"
+        @assert prices.forecasted_end ≤ forecasted_times[end] "End time after data end"
         forecast_prices = filter(
             :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
             forecast_prices,
         )
     end
-    return forecast_prices
+    (run_start, run_end) = (
+        forecast_prices.actual_run_time[1], forecast_prices.actual_run_time[end]
+    )
+    (forecasted_start, forecasted_end) = (
+        forecast_prices.forecasted_time[1], forecast_prices.forecasted_time[end]
+    )
+    return ForecastPrice(
+        run_start, run_end, forecasted_start, forecasted_end, forecast_prices
+    )
+end
+
+"""
+    get_prices_by_times(
+        prices::ActualPrice, times::Union{Tuple{DateTime,DateTime},Nothing}
+    )
+
+Filters actual prices based on supplied `times` (start, end)
+
+# Arguments
+
+  * `prices`: `ActualPrice` produced by [`get_all_actual_prices`](@ref)
+  * `times`: (start_time, end_time), inclusive
+
+# Returns
+
+Filtered [`ActualPrice`](@ref)
+"""
+function get_prices_by_times(
+    prices::ActualPrice, times::Union{Tuple{DateTime,DateTime},Nothing}
+)
+    @assert times[1] ≤ times[2] "Start time should be ≤ end time"
+    @assert prices.start_time ≤ times[1] "Start time before data start"
+    @assert prices.end_time ≤ times[end] "End time after data end"
+    actual_prices = prices.data
+    actual_prices = filter(:SETTLEMENTDATE => dt -> times[1] ≤ dt ≤ times[2], actual_prices)
+    (start_time, end_time) = (
+        actual_prices.SETTLEMENTDATE[1], actual_prices.SETTLEMENTDATE[end]
+    )
+    return ActualPrice(start_time, end_time, actual_prices)
 end
