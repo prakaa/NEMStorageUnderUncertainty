@@ -74,25 +74,26 @@ function _add_constraint_intertemporal_soc!(
     if length(times) < 2
         return nothing
     else
-        get_times_index(t, times) = findall(time -> time == t, times)[]
         JuMP.@constraint(
             model,
             intertemporal_soc[t=times[2:end]],
             (
-                soc_mwh[times[get_times_index(t, times)]] # soc at time t
+                soc_mwh[times[_get_times_index(t, times)]] # soc at time t
                 -
-                soc_mwh[times[get_times_index(t, times) - 1]] # soc at time t-1
+                soc_mwh[times[_get_times_index(t, times) - 1]] # soc at time t-1
                 -
-                charge_mw[times[get_times_index(t, times)]] * # calculate charge
+                charge_mw[times[_get_times_index(t, times)]] * # calculate charge
                 η_charge *
                 Minute(
-                    times[get_times_index(t, times)] - times[get_times_index(t, times) - 1]
+                    times[_get_times_index(t, times)] -
+                    times[_get_times_index(t, times) - 1],
                 ).value / 60.0  # dynamically calculate τ as hours
                 +
-                discharge_mw[times[get_times_index(t, times)]] / # calculate discharge
+                discharge_mw[times[_get_times_index(t, times)]] / # calculate discharge
                 η_discharge *
                 Minute(
-                    times[get_times_index(t, times)] - times[get_times_index(t, times) - 1]
+                    times[_get_times_index(t, times)] -
+                    times[_get_times_index(t, times) - 1],
                 ).value / 60.0 # dynamically calculate τ as hours
                 == 0
             )
