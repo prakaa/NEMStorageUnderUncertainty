@@ -1,6 +1,6 @@
-# Base JuMP Model
+# Objectives
 
 ```@autodocs
 Modules = [NEMStorageUnderUncertainty]
-Pages = ["model/base_model.jl"]
+Pages = ["model/objectives.jl"]
 ```
