@@ -3,9 +3,9 @@ function _run_model(
     storage::StorageDevice,
     times::Vector{DateTime},
     prices::Vector{<:Float64},
+    τ::Float64,
     formulation::StorageModelFormulation;
 )
-    τ = _get_times_frequency_in_hours(times)
     @debug "Filtering by region, then obtaining times and prices"
     @debug "Building model"
     model = build_storage_model(storage, prices, times, τ, formulation)
