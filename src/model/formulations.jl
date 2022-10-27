@@ -1,7 +1,42 @@
 abstract type StorageModelFormulation end
 
+@doc raw"""
+# Summary
+Maximises storage revenue:
+
+  * All periods are treated (weighted) equally
+  * No cycling/throughput limits are modelled
+  * Revenue is purely defined by the spot price for energy
+  * Intertemporal SoC constraints are applied
+
+```math
+\begin{aligned}
+  \max_{t} \quad & \sum_{t=1}^T{\tau\lambda_t(p_t-q_t)}\\
+  \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
+  & p_t \geq 0 \\
+  & q_t \geq 0 \\
+  & p_t - \bar{p}\left(1-u_t\right) \leq 0\\
+  & q_t - \bar{p}u_t \leq 0\\
+  & \underline{e} \leq e_t \leq \bar{e}    \\
+  & e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0\\
+  & e_1 = e_0 \\
+\end{aligned}
+```
+"""
 struct StandardFormulation <: StorageModelFormulation end
 
+"""
+# Arguments
+
+  * `silent`: Default `false`. If `true`, turn off JuMP/solver output
+  * `time_limit_sec`: Default `nothing`. Number of seconds before solver times out.
+  * `string_names`: Default `true`. If `false`, disables JuMP string names, which can
+    improve speed/performance.
+
+# Returns
+
+A `JuMP` model
+"""
 function _initialise_model(;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
@@ -20,21 +55,6 @@ function _initialise_model(;
     return model
 end
 
-@doc raw"""
-```math
-\begin{aligned}
-  \max_{t} \quad & \sum_{t=1}^T{\tau\lambda_t(p_t-q_t)}\\
-  \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
-  & p_t \geq 0 \\
-  & q_t \geq 0 \\
-  & p_t - \bar{p}\left(1-u_t\right) \leq 0\\
-  & q_t - \bar{p}u_t \leq 0\\
-  & \underline{e} \leq e_t \leq \bar{e}    \\
-  & e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0\\
-  & e_1 = e_0 \\
-\end{aligned}
-```math
-"""
 function build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:Union{Missing,AbstractFloat}},
