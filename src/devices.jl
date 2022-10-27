@@ -1,44 +1,35 @@
+"""
+"""
 abstract type StorageDevice end
 
-mutable struct BESS <: StorageDevice
-    const power_capacity::Float64
+Base.@kwdef struct BESS <: StorageDevice
+    "Maximum charge/discharge power capacity (MW)"
+    power_capacity::Float64
+    "Maximum energy capacity (MWh)"
     energy_capacity::Float64
+    "Minimum allowable operational state of charge (MWh)"
     soc_min::Float64
+    "Maximum allowable operational state of charge (MWh)"
     soc_max::Float64
-    const η_charge::Float64
-    const η_discharge::Float64
+    "Charging efficiency (0-1)"
+    η_charge::Float64
+    "Discharge efficiency (0-1)"
+    η_discharge::Float64
+    "Initial state of charge (MWh)"
     soc₀::Float64
-    throughput::Float64
+    "Total initial energy throughput (MWh)"
+    throughput::Float64 = 0.0
+
     @doc """
-        BESS(
-            power_capacity::Float64,
-            nominal_energy_capacity::Float64,
-            soc_min::Float64,
-            soc_max::Float64,
-            η_charge::Float64,
-            η_discharge::Float64,
-            soc₀::Float64
-        )
+    Initialises a battery energy storage system (BESS).
 
-    Initialises a battery energy storage system (BESS)
-
-    # Arguments
-
-      * `power_capacity`: Maximum charge/discharge power capacity (MW)
-      * `energy_capacity`: Maximum energy capacity (MWh)
-      * `soc_min`: Minimum allowable operational state of charge (MWh)
-      * `soc_max`: Maximum allowable operational state of charge (MWh)
-      * `η_charge`: Charging efficiency (0-1)
-      * `η_discharge`: Discharge efficiency (0-1)
-      * `soc₀`: Initial state of charge (MWh)
-      * `throughput`: Energy throughput (MWh)
+    `throughput` (in MWh) can be supplied in cases where the BESS has already undertaken
+    energy storage and discharge. This is akin to cycling but is independent of
+    storage capacity (significant where calendar and/or cycling degradation is
+    accounted for). If not supplied, default value is `0.0`.
 
     # Returns
-
-    A BESS. The following properties are immutable:
-      * `power_capacity`
-      * `η_charge`
-      * `η_discharge`
+    A [`BESS`](@ref)
     """
     function BESS(
         power_capacity::Float64,
@@ -47,8 +38,8 @@ mutable struct BESS <: StorageDevice
         soc_max::Float64,
         η_charge::Float64,
         η_discharge::Float64,
-        soc₀::Float64;
-        throughput::Float64=0.0,
+        soc₀::Float64,
+        throughput::Float64=0,
     )
         if any([cap ≤ 0 for cap in (power_capacity, energy_capacity)])
             throw(DomainError("Capacities should be > 0"))
