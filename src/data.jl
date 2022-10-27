@@ -123,7 +123,7 @@ Filters forecast prices based on supplied `run_times` (start, end) and `forecast
 
 Filtered [`ForecastPrice`](@ref)
 """
-function get_prices_by_times(
+function _get_prices_by_times(
     prices::ForecastPrice;
     forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
     run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
@@ -172,7 +172,7 @@ Filters actual prices based on supplied `times` (start, end)
 
 Filtered [`ActualPrice`](@ref)
 """
-function get_prices_by_times(
+function _get_prices_by_times(
     prices::ActualPrice, times::Union{Tuple{DateTime,DateTime},Nothing}
 )
     @assert times[1] ≤ times[2] "Start time should be ≤ end time"
@@ -184,4 +184,42 @@ function get_prices_by_times(
         actual_prices.SETTLEMENTDATE[1], actual_prices.SETTLEMENTDATE[end]
     )
     return ActualPrice(start_time, end_time, actual_prices)
+end
+
+function get_regional_times_and_prices(
+    price::ActualPrice,
+    region::String;
+    actual_data_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
+)
+    if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
+        throw(ArgumentError("Invalid region"))
+    end
+    if !isnothing(actual_data_window)
+        @debug "Filtering actual prices"
+        actual = _get_prices_by_times(price, actual_data_window)
+    end
+    df = actual.data
+    filter!(:REGIONID => x -> x == region, df)
+    disallowmissing!(df)
+    return (df.SETTLEMENTDATE, df.RRP)
+end
+
+function get_regional_times_and_prices(
+    price::ForecastPrice,
+    region::String,
+    run_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
+    forecasted_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
+)
+    if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
+        throw(ArgumentError("Invalid region"))
+    end
+    if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
+        forecast = _get_prices_by_times(
+            price; forecasted_time=forecasted_time_window, run_times=run_time_window
+        )
+    end
+    df = forecast.data
+    filter!(:REGIONID => x -> x == region, df)
+    disallowmissing!(df)
+    return (df.forecasted_time, df.RRP)
 end
