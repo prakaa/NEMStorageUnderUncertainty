@@ -13,13 +13,30 @@ import Parquet: read_parquet
 using DataFrames
 using JuMP: JuMP
 
+#DocStringExtensions Templates
+using DocStringExtensions
+@template (FUNCTIONS, METHODS) = """
+                                 $(TYPEDSIGNATURES)
+
+                                 # Summary
+                                 $(DOCSTRING)
+
+                                 # Methods
+                                 $(METHODLIST)
+                                 """
+@template TYPES = """
+                  $(TYPEDEF)
+                  $(TYPEDFIELDS)
+                  $(DOCSTRING)
+                  """
+
 # Includes
 ## Storage Devices
 include("devices.jl")
 ## Data Management
 include("data.jl")
 ## Model Components
-include("model/model_formulations.jl")
+include("model/formulations.jl")
 include("model/variables.jl")
 include("model/constraints.jl")
 include("model/objectives.jl")
@@ -27,4 +44,5 @@ include("model/objectives.jl")
 include("simulations.jl")
 ## Utilities
 include("utils.jl")
+
 end
