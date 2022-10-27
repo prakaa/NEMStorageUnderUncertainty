@@ -23,7 +23,7 @@ Maximises storage revenue:
 \end{aligned}
 ```
 """
-struct StandardFormulation <: StorageModelFormulation end
+struct StandardArbitrage <: StorageModelFormulation end
 
 """
 # Arguments
@@ -60,7 +60,7 @@ function build_storage_model(
     prices::Vector{<:Union{Missing,AbstractFloat}},
     times::Vector{DateTime},
     τ::Float64,
-    ::StandardFormulation;
+    ::StandardArbitrage;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
