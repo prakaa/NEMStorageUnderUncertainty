@@ -1,5 +1,6 @@
 # Storage Devices
 
-```@docs
-BESS
+```@autodocs
+Modules = [NEMStorageUnderUncertainty]
+Pages = ["devices.jl"]
 ```

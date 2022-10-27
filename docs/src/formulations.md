@@ -2,7 +2,7 @@
 
 ```@autodocs
 Modules = [NEMStorageUnderUncertainty]
-Pages = ["model/model_formulations.jl"]
+Pages = ["model/formulations.jl"]
 ```
 
 ## Model Components

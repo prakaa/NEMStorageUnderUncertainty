@@ -1,13 +1,12 @@
-using Documenter, NEMStorageUnderUncertainty
+using Documenter, DocStringExtensions, NEMStorageUnderUncertainty
 
 makedocs(;
     sitename="NEM Storage Under Uncertainty",
-    authors="Abhijith (Abi) Prakash",
     pages=Any[
         "Home" => "index.md",
         "Storage Devices" => "devices.md",
         "Price Data Compilers" => "data.md",
-        "Formulations" => "model_formulations.md",
+        "Model Formulations" => "formulations.md",
         "Model Components" => ["variables.md", "constraints.md", "objectives.md"],
     ],
 )
