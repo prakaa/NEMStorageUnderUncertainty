@@ -1,4 +1,4 @@
-using Documenter, DocStringExtensions, NEMStorageUnderUncertainty
+using Documenter, NEMStorageUnderUncertainty
 
 makedocs(;
     sitename="NEM Storage Under Uncertainty",
