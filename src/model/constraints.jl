@@ -45,10 +45,11 @@ function _add_constraint_initial_soc!(
 end
 
 @doc raw"""
-Adds the following constraint to `model`:
+Adds the following constraint to `model` if `times` has length ≥ 2:
 ``e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0``
 
 ``\eta`` are obtained from `storage`.
+
 
 # Arguments
 
@@ -65,6 +66,7 @@ function _add_constraint_intertemporal_soc!(
     charge_mw = model[:charge_mw]
     discharge_mw = model[:discharge_mw]
     if length(times) < 2
+        @debug "Intertemporal SoC constraint not added"
         return nothing
     else
         JuMP.@constraint(
