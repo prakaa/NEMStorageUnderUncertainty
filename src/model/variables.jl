@@ -1,8 +1,4 @@
 @doc raw"""
-    _add_variables_power!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
-    )
-
 Adds variables for charging in MW (``q_t``) and discharging in MW (``p_t``).
 
 The following variable bounds are applied:
@@ -29,10 +25,6 @@ function _add_variables_power!(
 end
 
 @doc raw"""
-    _add_variable_soc!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
-    )
-
 Adds variable that tracks state-of-charge (SoC, ``e_t``).
 
 The following variable bound is applied: ``\underline{e} \leq e_t \leq \bar{e}``, where
@@ -53,10 +45,6 @@ function _add_variable_soc!(
 end
 
 @doc raw"""
-    _add_variable_charge_state!(
-    model::JuMP.Model, times::Vector{DateTime}
-    )
-
 Adds binary variable that indicates charging (i.e. ``u_t=1``) when charging.
 
 # Arguments

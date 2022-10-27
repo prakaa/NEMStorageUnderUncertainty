@@ -1,8 +1,4 @@
 @doc raw"""
-    _add_constraints_charge_state!(
-        model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
-    )
-
 Adds two constraints to `model`:
   * ``p_t - \bar{p}\left(1-u_t\right) \leq 0``
   * ``q_t - \bar{p}u_t \leq 0``
@@ -31,10 +27,6 @@ function _add_constraints_charge_state!(
 end
 
 @doc raw"""
-    _add_constraint_initial_soc!(
-        model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
-    )
-
 Adds the following constraint to `model`: ``e_1 = e_0``, where ``e_0`` is obtained from
 `storage`.
 
@@ -53,10 +45,6 @@ function _add_constraint_initial_soc!(
 end
 
 @doc raw"""
-   _add_constraint_intertemporal_soc!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
-    )
-
 Adds the following constraint to `model`:
 ``e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0``
 

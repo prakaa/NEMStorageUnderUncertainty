@@ -19,8 +19,6 @@ struct ActualPrice <: PriceData
 end
 
 """
-    get_all_actual_prices(path::String)
-
 Obtains actual price data from `parquet` files located at `path`
 
 # Arguments
@@ -46,8 +44,6 @@ function get_all_actual_prices(path::String)
 end
 
 """
-    get_all_forecast_prices(pd_path::String, p5_path::String)
-
 Obtains and compiles all forecasted price data from `parquet` files located at the
 `P5MIN` path (`p5_path`) and the `PREDISPATCH path` (`pd_path`)
 
@@ -114,20 +110,14 @@ function get_all_forecast_prices(pd_path::String, p5_path::String)
 end
 
 """
-    get_prices_by_times(
-    prices::ForecastPrice;
-    forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
-    run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
-    )
-
 Filters forecast prices based on supplied `run_times` (start, end) and `forecasted_times`
 (start, end)
 
 # Arguments
 
   * `prices`: `ForecastPrice` produced by [`get_all_forecast_prices`](@ref)
-  * `forecasted_times`: (start_time, end_time), inclusive
-  * `run_times`: (start_time, end_time), inclusive
+  * `forecasted_times`: (`start_time`, `end_time`), inclusive
+  * `run_times`: (`start_time`, `end_time`), inclusive
 
 # Returns
 
@@ -171,16 +161,12 @@ function get_prices_by_times(
 end
 
 """
-    get_prices_by_times(
-        prices::ActualPrice, times::Union{Tuple{DateTime,DateTime},Nothing}
-    )
-
 Filters actual prices based on supplied `times` (start, end)
 
 # Arguments
 
   * `prices`: `ActualPrice` produced by [`get_all_actual_prices`](@ref)
-  * `times`: (start_time, end_time), inclusive
+  * `times`: (`start_time`, `end_time`), inclusive
 
 # Returns
 

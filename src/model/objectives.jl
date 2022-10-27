@@ -1,8 +1,4 @@
 @doc raw"""
-    _add_objective_standard!(
-    model::JuMP.Model, prices::Vector{AbstractFloat}, times::Vector{DateTime}, τ::Float64
-    )
-
 Adds a standard revenue-maximising objective function:
 
 ```math
