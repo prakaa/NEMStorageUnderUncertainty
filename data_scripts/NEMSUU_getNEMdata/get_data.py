@@ -27,7 +27,7 @@ def main():
     download_raw_data(
         "PREDISPATCH",
         "PRICE",
-        nemseer_cache / "PD",
+        nemseer_cache / "PREDISPATCH",
         forecasted_start=analysis_start,
         forecasted_end=analysis_end,
     )
