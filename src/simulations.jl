@@ -1,26 +1,16 @@
-function _simulate_actual_prices(
+function _run_model(
     optimizer::DataType,
     storage::StorageDevice,
-    actual_price_data_path::String,
-    region::String;
-    time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
+    times::Vector{DateTime},
+    prices::Vector{<:Float64},
+    formulation::StorageModelFormulation;
 )
-    if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
-        throw(ArgumentError("Invalid region"))
-    end
-    @debug "Loading all actual prices"
-    actual = get_all_actual_prices(actual_price_data_path)
-    if !isnothing(time_window)
-        @debug "Filtering actual prices"
-        actual = get_prices_by_times(actual, time_window)
-    end
-    df = actual.data
+    τ = _get_times_frequency_in_hours(times)
     @debug "Filtering by region, then obtaining times and prices"
-    filter!(:REGIONID => x -> x == region, df)
-    times = df[:, :SETTLEMENTDATE]
-    prices = df[:, :RRP]
     @debug "Building model"
-    model = build_storage_model(storage, prices, times, StandardFormulation())
+    model = build_storage_model(storage, prices, times, τ, formulation)
     JuMP.set_optimizer(model, optimizer)
-    return (model, df)
+    @debug "Begin model solving"
+    JuMP.optimize!(model)
+    return model
 end
