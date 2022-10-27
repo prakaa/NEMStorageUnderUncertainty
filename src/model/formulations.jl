@@ -59,7 +59,8 @@ function build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:Union{Missing,AbstractFloat}},
     times::Vector{DateTime},
-    ::StandardFormulation,
+    τ::Float64,
+    ::StandardFormulation;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
@@ -67,7 +68,6 @@ function build_storage_model(
     if length(times) != length(prices)
         throw(ArgumentError("Prices and times vectors must be the same length"))
     end
-    τ = _get_times_frequency_in_hours(times)
     model = _initialise_model(;
         silent=silent, time_limit_sec=time_limit_sec, string_names=string_names
     )
