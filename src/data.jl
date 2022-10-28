@@ -13,7 +13,7 @@ end
 """
 struct ForecastData{T<:AbstractFloat} <: NEMData
     run_times::Vector{DateTime}
-    forecasted_times::vector{DateTime}
+    forecasted_times::Vector{DateTime}
     prices::Vector{T}
     τ::T
 end
@@ -61,7 +61,7 @@ function get_filtered_data(
     @debug "Filtering actual prices by region"
     filter!(:REGIONID => x -> x == region, actual_data)
     disallowmissing!(actual_data)
-    τ = _get_times_frequency_in_hour(actual_data.SETTLEMENTDATE)
+    τ = _get_times_frequency_in_hours(actual_data.SETTLEMENTDATE)
     if !isnothing(actual_time_window)
         @debug "Filtering actual prices by time"
         actual_data = _get_data_by_times(actual_data, actual_time_window)
