@@ -12,10 +12,10 @@ function _run_model(
     JuMP.set_optimizer(model, optimizer)
     @debug "Begin model solving"
     JuMP.optimize!(model)
-    if JuMP.termination_status(model) == MOI.OPTIMAL
+    if JuMP.termination_status(model) ==JuMP.OPTIMAL
         return model
-    elseif JuMP.termination_status(model) == MOI.TIME_LIMIT ||
-        JuMP.termination_status(model) == MOI.ITERATION_LIMIT
+    elseif JuMP.termination_status(model) == JuMP.TIME_LIMIT ||
+        JuMP.termination_status(model) == JuMP.ITERATION_LIMIT
         @warn "Model run between $(times[1]) and $(times[end]) hit iteration/time limit"
         return model
     else
