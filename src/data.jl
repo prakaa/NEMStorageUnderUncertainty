@@ -50,7 +50,7 @@ function _get_data_by_times(actual_data::DataFrame, times::Tuple{DateTime,DateTi
     return actual_data
 end
 
-function get_filtered_data(
+function get_ActualData(
     actual_data::DataFrame,
     region::String,
     actual_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
@@ -113,6 +113,7 @@ function _impute_predispatch_data(pd_data::DataFrame)
     function _resample_predispatch_to_5minutes(region_data::DataFrame)
         run_times = unique(region_data.run_time)
         all_runtime_data = DataFrame[]
+        p = Progress(length(run_times), "Imputing predispatch data")
         for run_time in run_times
             # isolate data for one run time
             run_time_data = filter(:run_time => x -> x == run_time, region_data)
@@ -141,6 +142,7 @@ function _impute_predispatch_data(pd_data::DataFrame)
                 fill_data[:, :run_time] .= fill_run_time
                 push!(all_runtime_data, fill_data)
             end
+            next!(p)
         end
         return all_runtime_data
     end
@@ -209,7 +211,7 @@ function _get_data_by_times(
     return forecast_data
 end
 
-function get_filtered_data(
+function get_ForecastData(
     pd_df::DataFrame,
     p5_df::DataFrame,
     region::String,
@@ -219,16 +221,20 @@ function get_filtered_data(
     if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
         throw(ArgumentError("Invalid region"))
     end
+    @debug "Filtering PD and P5 DataFrames by region"
     for df in (p5_df, pd_df)
         filter!(:REGIONID => x -> x == region, df)
-        disallowmissing!(df)
     end
-    pd_df = _impute_predispatch_forecasts(pd_df)
+    @debug "Imputing predispatch data"
+    pd_df = _impute_predispatch_data(pd_df)
+    @debug "Calculating actual run times"
     # PD actual run time is 30 minutes before nominal run time
     pd_df[!, :actual_run_time] = pd_df[!, :run_time] .- Minute(30)
     # P5MIN actual run time is 5 minutes before nominal run time
     p5_df[!, :actual_run_time] = p5_df[!, :run_time] .- Minute(5)
-    forecast_data = _concatenate_forecast_prices(pd_df, p5_df)
+    @debug "Concatenating PD and P5 datasets to make a forecast dataset"
+    forecast_data = _concatenate_forecast_data(pd_df, p5_df)
+    @debug "Filtering forecast dataset by times"
     if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
         forecast_data = _get_data_by_times(
             forecast_data;
@@ -236,9 +242,19 @@ function get_filtered_data(
             run_times=run_time_window,
         )
     end
-    τ = _get_times_frequency_in_hours(forecast_data.forecasted_time)
+    sort!(forecast_data, [:actual_run_time, :forecasted_time])
+    τ = _get_times_frequency_in_hours(
+        forecast_data[
+            forecast_data.actual_run_time .== forecast_data.actual_run_time[1],
+            :forecasted_time,
+        ],
+    )
+    disallowmissing!(forecast_data)
     forecast = ForecastData(
-        forecast_data.actual_run_time, forecast_data.forecasted_time, forecast_data.RRP, τ
+        forecast_data.actual_run_time,
+        forecast_data.forecasted_time,
+        Float64.(forecast_data.RRP),
+        τ,
     )
     return forecast
 end
