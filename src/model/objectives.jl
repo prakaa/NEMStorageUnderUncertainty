@@ -15,10 +15,7 @@ Adds a standard revenue-maximising objective function:
 
 """
 function _add_objective_standard!(
-    model::JuMP.Model,
-    prices::Vector{<:Union{Missing,Float64}},
-    times::Vector{DateTime},
-    τ::Float64,
+    model::JuMP.Model, prices::Vector{<:AbstractFloat}, times::Vector{DateTime}, τ::Float64
 )
     discharge_mw = model[:discharge_mw]
     charge_mw = model[:charge_mw]

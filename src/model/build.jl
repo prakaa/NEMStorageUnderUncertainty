@@ -18,7 +18,7 @@ Built JuMP model
 """
 function build_storage_model(
     storage::StorageDevice,
-    prices::Vector{<:Union{Missing,AbstractFloat}},
+    prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
     τ::Float64,
     ::StandardArbitrage;
