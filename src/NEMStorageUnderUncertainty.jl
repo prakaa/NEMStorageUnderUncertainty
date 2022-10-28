@@ -11,7 +11,9 @@ import Parquet: read_parquet
 
 # Using
 using DataFrames
+using Impute: Impute
 using JuMP: JuMP
+using ProgressMeter
 
 #DocStringExtensions Templates
 using DocStringExtensions
