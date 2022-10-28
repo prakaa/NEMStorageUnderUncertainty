@@ -19,8 +19,8 @@ The type of model constructed and run is dependent on the `formulation`
 function _run_model(
     optimizer::DataType,
     storage::StorageDevice,
-    times::Vector{DateTime},
     prices::Vector{<:Float64},
+    times::Vector{DateTime},
     τ::Float64,
     formulation::StorageModelFormulation;
 )

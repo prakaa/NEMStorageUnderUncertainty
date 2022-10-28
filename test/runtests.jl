@@ -29,8 +29,8 @@ function test_run_model(data_path::String, start_time::DateTime, end_time::DateT
     model = NEMStorageUnderUncertainty._run_model(
         HiGHS.Optimizer,
         bess,
-        times,
         prices,
+        times,
         τ,
         NEMStorageUnderUncertainty.StandardArbitrage(),
     )
