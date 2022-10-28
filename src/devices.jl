@@ -2,6 +2,15 @@
 """
 abstract type StorageDevice end
 
+function Base.copy(x::T, soc₀::Float64, throughput::Float64) where {T<:StorageDevice}
+    filtered_fields = [f for f ∈ fieldnames(T) if (f != :soc₀ || f != :throughput)]
+    return T(;
+        Dict(:($k) => getfield(x, k) for k in filtered_fields)...,
+        :soc₀=>soc₀,
+        :throughput=>throughput,
+    )
+end
+
 Base.@kwdef struct BESS <: StorageDevice
     "Maximum charge/discharge power capacity (MW)"
     power_capacity::Float64
