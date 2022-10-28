@@ -5,8 +5,8 @@ The type of model constructed and run is dependent on the `formulation`
 # Arguments
   * `optimizer`: A solver optimizer
   * `storage`: [`StorageDevice`](@ref)
-  * `times`: Times to run model for
   * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
+  * `times`: Times to run model for
   * `τ`: Interval duration in hours
   * `formulation`: A model formulation ([`StorageModelFormulation`](@ref))
 
