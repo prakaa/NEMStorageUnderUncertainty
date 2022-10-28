@@ -42,7 +42,7 @@ end
     month_model = test_run_model(
         test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
     )
-    @test isapprox(JuMP.objective_value(model), 171887, atol=0.5)
+    @test isapprox(JuMP.objective_value(month_model), 171887, atol=0.5)
     interval_model = test_run_model(
         test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
     )
