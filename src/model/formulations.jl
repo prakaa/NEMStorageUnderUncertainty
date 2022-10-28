@@ -1,5 +1,9 @@
 abstract type Formulation end
+"""
+"""
 abstract type StorageModelFormulation <: Formulation end
+"""
+"""
 abstract type DegradationModel <: Formulation end
 
 @doc raw"""
@@ -57,33 +61,7 @@ function _initialise_model(;
     return model
 end
 
-function build_storage_model(
-    storage::StorageDevice,
-    prices::Vector{<:Union{Missing,AbstractFloat}},
-    times::Vector{DateTime},
-    τ::Float64,
-    ::StandardArbitrage;
-    silent::Bool=false,
-    time_limit_sec::Union{Float64,Nothing}=nothing,
-    string_names::Bool=true,
-)
-    if length(times) != length(prices)
-        throw(ArgumentError("Prices and times vectors must be the same length"))
-    end
-    model = _initialise_model(;
-        silent=silent, time_limit_sec=time_limit_sec, string_names=string_names
-    )
-    @debug "Adding vars"
-    _add_variables_power!(model, storage, times)
-    _add_variable_soc!(model, storage, times)
-    _add_variable_charge_state!(model, times)
-    @debug "Adding constraints"
-    _add_constraints_charge_state!(model, storage, times)
-    _add_constraint_intertemporal_soc!(model, storage, times, τ)
-    _add_constraint_initial_soc!(model, storage, times)
-    @debug "Adding objective"
-    _add_objective_standard!(model, prices, times, τ)
-    return model
-end
-
+"""
+No storage degradation modelled in simulations.
+"""
 struct NoDegradation <: DegradationModel end
