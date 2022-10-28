@@ -17,21 +17,16 @@ function test_run_model(data_path::String, start_time::DateTime, end_time::DateT
         throughput=0.0,
     )
     actual_price_data_path = joinpath(data_path, "dispatch_price")
-    actual = NEMStorageUnderUncertainty.get_all_actual_prices(actual_price_data_path)
-    (times, prices) = NEMStorageUnderUncertainty.get_regional_times_and_prices(
-        actual, "NSW1"; actual_data_window=(start_time, end_time)
+    actual_data = NEMStorageUnderUncertainty.get_all_actual_data(actual_price_data_path)
+    actual = NEMStorageUnderUncertainty.get_ActualData(
+        actual_data, "NSW1", (start_time, end_time)
     )
-    if length(times) > 1
-        τ = NEMStorageUnderUncertainty._get_times_frequency_in_hours(times)
-    else
-        τ = 5.0 / 12.0
-    end
     model = NEMStorageUnderUncertainty._run_model(
         HiGHS.Optimizer,
         bess,
-        prices,
-        times,
-        τ,
+        actual.prices,
+        actual.times,
+        actual.τ,
         NEMStorageUnderUncertainty.StandardArbitrage(),
     )
     return model
