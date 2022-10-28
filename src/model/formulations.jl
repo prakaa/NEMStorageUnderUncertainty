@@ -1,4 +1,6 @@
-abstract type StorageModelFormulation end
+abstract type Formulation end
+abstract type StorageModelFormulation <: Formulation end
+abstract type DegradationModel <: Formulation end
 
 @doc raw"""
 # Summary
@@ -83,3 +85,5 @@ function build_storage_model(
     _add_objective_standard!(model, prices, times, τ)
     return model
 end
+
+struct NoDegradation <: DegradationModel end
