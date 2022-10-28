@@ -38,12 +38,13 @@ function test_run_model(data_path::String, start_time::DateTime, end_time::DateT
 end
 
 @testset "Run Model Tests" begin
+    test_data_path = joinpath(@__DIR__, "test_data")
     month_model = test_run_model(
-        "test/test_data", DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
+        test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
     )
     @test isapprox(JuMP.objective_value(model), 171887, atol=0.5)
     interval_model = test_run_model(
-        "test/test_data", DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
+        test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
     )
     @test JuMP.num_constraints(interval_model; count_variable_in_set_constraints=false) == 3
 end
