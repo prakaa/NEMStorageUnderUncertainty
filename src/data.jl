@@ -4,6 +4,7 @@ abstract type NEMData end
 """
 """
 struct ActualData{T<:AbstractFloat} <: NEMData
+    region::String
     times::Vector{DateTime}
     prices::Vector{T}
     τ::T
@@ -12,6 +13,7 @@ end
 """
 """
 struct ForecastData{T<:AbstractFloat} <: NEMData
+    region::String
     run_times::Vector{DateTime}
     forecasted_times::Vector{DateTime}
     prices::Vector{T}
@@ -66,7 +68,7 @@ function get_ActualData(
         @debug "Filtering actual prices by time"
         actual_data = _get_data_by_times(actual_data, actual_time_window)
     end
-    actual = ActualData(actual_data.SETTLEMENTDATE, actual_data.RRP, τ)
+    actual = ActualData(region, actual_data.SETTLEMENTDATE, actual_data.RRP, τ)
     return actual
 end
 
@@ -251,6 +253,7 @@ function get_ForecastData(
     )
     disallowmissing!(forecast_data)
     forecast = ForecastData(
+        region,
         forecast_data.actual_run_time,
         forecast_data.forecasted_time,
         Float64.(forecast_data.RRP),
