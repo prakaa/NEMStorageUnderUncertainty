@@ -1,5 +1,5 @@
 """
-Build a `StandardArbitrage` model
+Build a [`StandardArbitrage`](@ref) model
 
 # Arguments
 
@@ -11,6 +11,10 @@ Build a `StandardArbitrage` model
   * `silent`: default `false`. `true` to suppress solver output
   * `time_limit_sec`: default `nothing`. `Float64` to impose solver time limit in seconds
   * `string_names`: default `true`. `false` to disable JuMP string names
+
+# Returns
+
+Built JuMP model
 """
 function build_storage_model(
     storage::StorageDevice,
