@@ -7,7 +7,10 @@ makedocs(;
         "Storage Devices" => "devices.md",
         "Price Data Compilers" => "data.md",
         "Model Formulations" => "formulations.md",
-        "Model Components" => ["variables.md", "constraints.md", "objectives.md"],
+        "Model Components" => [
+            "variables.md", "constraints.md", "objectives.md", "build.md"
+        ],
+        "Simulations" => "simulations.md",
     ],
 )
 
