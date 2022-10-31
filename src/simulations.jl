@@ -19,7 +19,7 @@ The type of model constructed and run is dependent on the `formulation`
 function _run_model(
     optimizer::DataType,
     storage::StorageDevice,
-    prices::Vector{<:Float64},
+    prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
     τ::Float64,
     formulation::StorageModelFormulation;
@@ -62,10 +62,7 @@ end
 New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
 """
 function _update_storage_state(
-    storage::T where {T<:StorageDevice},
-    model::JuMP.Model,
-    τ::Float64,
-    degradation::NoDegradation,
+    storage::StorageDevice, model::JuMP.Model, τ::Float64, ::NoDegradation
 )
     if length(model[:soc_mwh]) == 1
         soc_start = model[:soc_mwh][1]
@@ -82,3 +79,43 @@ function _update_storage_state(
     end
     return copy(storage, new_soc₀, period_throughput_mwh)
 end
+
+function _get_simulation_portions(
+    binding::T, horizon::T, times::Vector{DateTime}, τ::Float64
+) where {T<:Period}
+    (binding_min, horizon_min) = Minute.((binding, horizon))
+    (binding_n, horizon_n) = @. value((binding_min, horizon_min) / (τ * 60.0))
+    @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
+    @assert(
+        horizon_n ≤ length(times),
+        "Horizon is longer than data (max of ($(data.times[end] - data.times[1]))"
+    )
+    binding_intervals = Tuple[]
+    horizon_ends = Int64[]
+    (binding_start, horizon_end) = (1, horizon_n)
+    while horizon_end ≤ length(times)
+        binding_end = binding_start + binding_n - 1
+        push!(binding_intervals, (binding_start, binding_end))
+        push!(horizon_ends, horizon_end)
+        binding_start = binding_end + 1
+        horizon_end = binding_start + horizon_n - 1
+    end
+    binding_intervals = binding_intervals[horizon_ends .≤ length(times)]
+    filter!(x -> x ≤ length(times), horizon_ends)
+    @assert(
+        length(binding_intervals) == length(horizon_ends),
+        "Binding periods and horizon end vectors length mismatch"
+    )
+    return binding_intervals, horizon_ends
+end
+
+function simulate_storage_operation(
+    optimizer::DataType,
+    storage::StorageDevice,
+    data::ActualData,
+    region::String,
+    model_formulation::StorageModelFormulation,
+    degradation::DegradationModel;
+    binding::T,
+    horizon::T,
+) where {T<:Period} end
