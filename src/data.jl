@@ -74,8 +74,8 @@ function get_ActualData(
     return actual
 end
 
-function Base.convert(DataFrame, actual::ActualData)
-    return DataFrame(
+function Base.convert(::Type{T}, actual::ActualData) where {T<:DataFrame}
+    return T(
         :times => actual.times,
         :prices => actual.prices,
         :region => fill(actual.region, length(actual.prices)),
@@ -172,16 +172,9 @@ function _concatenate_forecast_data(pd_data::DataFrame, p5_data::DataFrame)
     pd_data = _drop_overlapping_PD_forecasts(pd_data)
     pd_data = pd_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
     p5_data = p5_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
-    (pd_rtimes, pd_ftimes) = (
-        unique(pd_data.actual_run_time), unique(pd_data.forecasted_time)
-    )
-    (p5_rtimes, p5_ftimes) = (
-        unique(p5_data.actual_run_time), unique(p5_data.forecasted_time)
-    )
-    if (
-        ((pd_rtimes[1] != p5_rtimes[1]) || (pd_rtimes[end] != p5_rtimes[end])) ||
-        ((pd_ftimes[1] != p5_ftimes[1]) || (pd_ftimes[end] != p5_ftimes[end]))
-    )
+    pd_ftimes = unique(pd_data.forecasted_time)
+    p5_ftimes = unique(p5_data.forecasted_time)
+    if ((pd_ftimes[1] != p5_ftimes[1]) || (pd_ftimes[end] != p5_ftimes[end]))
         aligned = false
     else
         aligned = true
@@ -288,10 +281,7 @@ function get_ForecastData(
     )
     disallowmissing!(forecast_data)
     if !aligned
-        warning = (
-            "PD and P5 datasets not aligned. The number of forecast entries across " *
-            "run/forecasted times may not be consistent"
-        )
+        warning = ("PD and P5 datasets not aligned to the same forecasted times")
         @warn warning
     end
     forecast = ForecastData(
@@ -305,8 +295,8 @@ function get_ForecastData(
     return forecast
 end
 
-function Base.convert(DataFrame, forecast::ForecastData)
-    return DataFrame(
+function Base.convert(::Type{T}, forecast::ForecastData) where {T<:DataFrame}
+    return T(
         :actual_run_times => forecast.run_times,
         :forecasted_times => forecast.forecasted_times,
         :prices => forecast.prices,
