@@ -80,11 +80,13 @@ function _update_storage_state(
     return copy(storage, new_soc₀, period_throughput_mwh)
 end
 
-function _get_simulation_portions(
-    binding::T, horizon::T, times::Vector{DateTime}, τ::Float64
+function _get_periods_for_simulation(
+    binding::T, horizon::T, data::ActualData
 ) where {T<:Period}
+    τ = data.τ
+    times = data.times
     (binding_min, horizon_min) = Minute.((binding, horizon))
-    (binding_n, horizon_n) = @. value((binding_min, horizon_min) / (τ * 60.0))
+    (binding_n, horizon_n) = @. Dates.value((binding_min, horizon_min) / (τ * 60.0))
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
     @assert(
         horizon_n ≤ length(times),
@@ -104,7 +106,7 @@ function _get_simulation_portions(
     filter!(x -> x ≤ length(times), horizon_ends)
     @assert(
         length(binding_intervals) == length(horizon_ends),
-        "Binding periods and horizon end vectors length mismatch"
+        "Length mismatch between binding periods and horizon end vectors"
     )
     return binding_intervals, horizon_ends
 end
