@@ -111,51 +111,45 @@ function get_all_pd_and_p5_data(pd_path::String, p5_path::String)
     return (pd_data, p5_data)
 end
 
-function _impute_predispatch_data(pd_data::DataFrame)
-    function _resample_predispatch_to_5minutes(region_data::DataFrame)
-        run_times = unique(region_data.run_time)
-        all_runtime_data = DataFrame[]
-        p = Progress(length(run_times), "Imputing predispatch data")
-        for run_time in run_times
-            # isolate data for one run time
-            run_time_data = filter(:run_time => x -> x == run_time, region_data)
-            # generate forecasted time at 5 minute frequency
-            fill_forecasted_times = Vector(
-                run_time_data.forecasted_time[1]:Minute(5):run_time_data.forecasted_time[end],
-            )
-            # merge 5-minute frequency forecasted times into original data for one run time
-            expanded_run_time_data = leftjoin(
-                DataFrame(:forecasted_time => fill_forecasted_times),
-                run_time_data;
-                on=:forecasted_time,
-            )
-            # impute data via Next Observation Carried Backwards (NOCB)
-            sort!(expanded_run_time_data, :forecasted_time)
-            expanded_run_time_data[!, [:run_time, :REGIONID, :RRP]] = Impute.nocb(
-                expanded_run_time_data[:, [:run_time, :REGIONID, :RRP]]
-            )
-            push!(all_runtime_data, expanded_run_time_data)
-            # filling forecasts for the next 25 minutes with the same imputed data
-            ffill_run_times = Vector(
-                (run_time + Minute(5)):Minute(5):(run_time + Minute(25))
-            )
-            for fill_run_time in ffill_run_times
-                fill_data = copy(expanded_run_time_data)
-                fill_data[:, :run_time] .= fill_run_time
-                push!(all_runtime_data, fill_data)
-            end
-            next!(p)
+function _impute_predispatch_data(regional_pd_data::DataFrame)
+    run_times = unique(regional_pd_data.actual_run_time)
+    all_runtime_data = DataFrame[]
+    p = Progress(length(run_times), "Imputing predispatch data")
+    for run_time in run_times
+        # isolate data for one run time
+        run_time_data = filter(:actual_run_time => x -> x == run_time, regional_pd_data)
+        # generate forecasted time at 5 minute frequency
+        fill_forecasted_times = Vector(
+            range(
+                run_time_data.forecasted_time[1],
+                run_time_data.forecasted_time[end];
+                step=Minute(5),
+            ),
+        )
+        # merge 5-minute frequency forecasted times into original data for one run time
+        expanded_run_time_data = leftjoin(
+            DataFrame(:forecasted_time => fill_forecasted_times),
+            run_time_data;
+            on=:forecasted_time,
+        )
+        sort!(expanded_run_time_data, :forecasted_time)
+        # impute data via Next Observation Carried Backwards (NOCB)
+        imputed_run_time_data = Impute.nocb(expanded_run_time_data)
+        push!(all_runtime_data, imputed_run_time_data)
+        # filling forecasts for the next 25 minutes with the same imputed data
+        ffill_run_times = Vector(
+            range(run_time + Minute(5), run_time + Minute(25); step=Minute(5))
+        )
+        for fill_run_time in ffill_run_times
+            fill_data = copy(imputed_run_time_data)
+            fill_data[:, :actual_run_time] .= fill_run_time
+            # remove periods when run time > forecasted time
+            filter!([:actual_run_time, :forecasted_time] => (rt, ft) -> rt <= ft, fill_data)
+            push!(all_runtime_data, fill_data)
         end
-        return all_runtime_data
+        next!(p)
     end
-
-    region_dfs = DataFrame[]
-    for region in unique(pd_data.REGIONID)
-        region_df = filter(:REGIONID => x -> x == region, pd_data)
-        run_time_dfs = _resample_predispatch_to_5minutes(region_df)
-        push!(region_dfs, run_time_dfs...)
-    end
-    return vcat(region_dfs...)
+    return vcat(all_runtime_data...)
 end
 
 function _drop_overlapping_PD_forecasts(pd_data::DataFrame)
@@ -166,12 +160,30 @@ end
 
 function _concatenate_forecast_data(pd_data::DataFrame, p5_data::DataFrame)
     pd_data = _drop_overlapping_PD_forecasts(pd_data)
-    pd_prices = pd_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
-    p5_prices = p5_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
+    pd_data = pd_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
+    p5_data = p5_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
+    (pd_rtimes, pd_ftimes) = (
+        unique(pd_data.actual_run_time), unique(pd_data.forecasted_time)
+    )
+    (p5_rtimes, p5_ftimes) = (
+        unique(p5_data.actual_run_time), unique(p5_data.forecasted_time)
+    )
+    if (
+        (pd_rtimes[1] != p5_rtimes[1]) ||
+        (pd_rtimes[end] != p5_rtimes[end]) ||
+        (pd_ftimes[1] != p5_ftimes[1]) ||
+        (pd_ftimes[end] != p5_ftimes[end])
+    )
+        warning = (
+            "PD and P5 datasets not aligned by run times or by forecasted times." *
+            " The number of forecast entries across run/forecasted time may not be consistent"
+        )
+        @warn warning
+    end
     # concatenate Data
-    forecast_prices = vcat(pd_prices, p5_prices)
-    sort!(forecast_prices, [:forecasted_time, :actual_run_time, :REGIONID])
-    return forecast_prices
+    forecast_data = vcat(pd_data, p5_data)
+    sort!(forecast_data, [:forecasted_time, :actual_run_time, :REGIONID])
+    return forecast_data
 end
 
 """
@@ -188,38 +200,48 @@ Filters forecast prices based on supplied `run_times` (start, end) and `forecast
 
 Filtered [`ForecastPrice`](@ref)
 """
-function _get_data_by_times(
+function _get_data_by_times!(
     forecast_data::DataFrame;
-    forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
     run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
+    forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
 )
     if !isnothing(run_times)
-        @assert run_times[1] ≤ run_times[2] "Start time should be ≤ end time"
-        @assert forecast_data.actual_run_time[1] ≤ run_times[1] "Start time before data start"
-        @assert forecast_data.actual_run_time[end] ≥ run_times[end] "End time after data end"
-        forecast_data = filter(
-            :actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_data
+        @assert(run_times[1] ≤ run_times[2], "Start time should be ≤ end time")
+        @assert(
+            forecast_data.actual_run_time[1] ≤ run_times[1], "Start time before data start"
         )
+        @assert(
+            forecast_data.actual_run_time[end] ≥ run_times[end], "End time after data end"
+        )
+        filter!(:actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_data)
     end
     if !isnothing(forecasted_times)
-        @assert forecasted_times[1] ≤ forecasted_times[2] "Start time should be ≤ end time"
-        @assert forecast_data.forecated_time[1] ≤ forecasted_times[1] "Start time before data start"
-        @assert forecast_data.forecasted_time[2] ≥ forecasted_times[end] "End time after data end"
-        forecast_data = filter(
-            :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
+        @assert(
+            forecasted_times[1] ≤ forecasted_times[2], "Start time should be ≤ end time"
+        )
+        @assert(
+            forecast_data.forecated_time[1] ≤ forecasted_times[1],
+            "Start time before data start"
+        )
+        @assert(
+            forecast_data.forecasted_time[2] ≥ forecasted_times[end],
+            "End time after data end"
+        )
+        filter!(
+            forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
             forecast_data,
         )
     end
-    return forecast_data
 end
 
 function get_ForecastData(
-    pd_df::DataFrame,
-    p5_df::DataFrame,
+    pd_data::DataFrame,
+    p5_data::DataFrame,
     region::String,
     run_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
     forecasted_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
 )
+    (p5_df, pd_df) = (copy(p5_data), copy(pd_data))
     if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
         throw(ArgumentError("Invalid region"))
     end
@@ -227,23 +249,23 @@ function get_ForecastData(
     for df in (p5_df, pd_df)
         filter!(:REGIONID => x -> x == region, df)
     end
-    @debug "Imputing predispatch data"
-    pd_df = _impute_predispatch_data(pd_df)
-    @debug "Calculating actual run times"
-    # PD actual run time is 30 minutes before nominal run time
-    pd_df[!, :actual_run_time] = pd_df[!, :run_time] .- Minute(30)
-    # P5MIN actual run time is 5 minutes before nominal run time
-    p5_df[!, :actual_run_time] = p5_df[!, :run_time] .- Minute(5)
-    @debug "Concatenating PD and P5 datasets to make a forecast dataset"
-    forecast_data = _concatenate_forecast_data(pd_df, p5_df)
-    @debug "Filtering forecast dataset by times"
-    if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
-        forecast_data = _get_data_by_times(
-            forecast_data;
-            forecasted_times=forecasted_time_window,
-            run_times=run_time_window,
-        )
+    @debug "Calculating actual run times and dropping original run time col"
+    for (df, minutes) in zip((p5_df, pd_df), (5, 30))
+        df[!, :actual_run_time] = df[!, :run_time] .- Minute(minutes)
+        select!(df, Not(:run_time))
     end
+    @debug "Filtering PD and P5 DataFrames by times and dropping nominal run time col"
+    for df in (p5_df, pd_df)
+        if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
+            _get_data_by_times!(
+                df; run_times=run_time_window, forecasted_times=forecasted_time_window
+            )
+        end
+    end
+    @debug "Imputing predispatch data"
+    imputed_pd_df = _impute_predispatch_data(pd_df)
+    @debug "Concatenating PD and P5 datasets to make a forecast dataset"
+    forecast_data = _concatenate_forecast_data(imputed_pd_df, p5_df)
     sort!(forecast_data, [:actual_run_time, :forecasted_time])
     τ = _get_times_frequency_in_hours(
         forecast_data[
