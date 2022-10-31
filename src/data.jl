@@ -246,28 +246,29 @@ function _get_data_by_times!(
     forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
 )
     if !isnothing(run_times)
-        @assert(run_times[1] ≤ run_times[2], "Start time should be ≤ end time")
+        @assert(run_times[1] ≤ run_times[2], "Run start time should be ≤ end time")
         @assert(
             forecast_data.actual_run_time[1] ≤ run_times[1],
-            "Start time before $forecast_type start"
+            "Run start time before $forecast_type start"
         )
         @assert(
             forecast_data.actual_run_time[end] ≥ run_times[end],
-            "End time after $forecast_type end"
+            "Run end time after $forecast_type end"
         )
         filter!(:actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_data)
     end
     if !isnothing(forecasted_times)
         @assert(
-            forecasted_times[1] ≤ forecasted_times[2], "Start time should be ≤ end time"
+            forecasted_times[1] ≤ forecasted_times[2],
+            "Forecasted start time should be ≤ end time"
         )
         @assert(
             forecast_data.forecasted_time[1] ≤ forecasted_times[1],
-            "Start time before $forecast_type start"
+            "Forecasted start time before $forecast_type start"
         )
         @assert(
             forecast_data.forecasted_time[end] ≥ forecasted_times[end],
-            "End time after $forecast_type end"
+            "Forecasted end time after $forecast_type end"
         )
         filter!(
             :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
