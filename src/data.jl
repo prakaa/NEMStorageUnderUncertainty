@@ -61,15 +61,15 @@ function get_ActualData(
     if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
         throw(ArgumentError("Invalid region"))
     end
+    disallowmissing!(actual_df)
     @debug "Filtering actual prices by region"
     filter!(:REGIONID => x -> x == region, actual_df)
-    disallowmissing!(actual_df)
     τ = _get_times_frequency_in_hours(actual_df.SETTLEMENTDATE)
     if !isnothing(actual_time_window)
         @debug "Filtering actual prices by time"
-        actual_df = _get_data_by_times(actual_data, actual_time_window)
+        actual_df = _get_data_by_times(actual_df, actual_time_window)
     end
-    actual = ActualData(region, actual_df.SETTLEMENTDATE, actual_data.RRP, τ)
+    actual = ActualData(region, actual_df.SETTLEMENTDATE, actual_df.RRP, τ)
     return actual
 end
 
