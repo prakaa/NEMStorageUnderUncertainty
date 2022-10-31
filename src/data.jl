@@ -313,7 +313,7 @@ function get_ForecastData(
     imputed_pd_df = _impute_predispatch_data(pd_df)
     # impute before filtering by time as imputation forward fills runs
     @debug "Filtering PD and P5 DataFrames by times and dropping nominal run time col"
-    for (ftype, df) in zip(("predispatch", "p5min"), (imputed_pd_df, p5_df))
+    for (ftype, df) in zip(("PREDISPATCH", "P5MIN"), (imputed_pd_df, p5_df))
         if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
             _get_data_by_times!(
                 df,
