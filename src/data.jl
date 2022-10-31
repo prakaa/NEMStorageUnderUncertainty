@@ -18,6 +18,7 @@ struct ForecastData{T<:AbstractFloat} <: NEMData
     forecasted_times::Vector{DateTime}
     prices::Vector{T}
     τ::T
+    aligned::Bool
 end
 
 ####### ACTUAL PRICES #######
@@ -71,6 +72,14 @@ function get_ActualData(
     end
     actual = ActualData(region, actual_df.SETTLEMENTDATE, actual_df.RRP, τ)
     return actual
+end
+
+function Base.convert(DataFrame, actual::ActualData)
+    return DataFrame(
+        :times => actual.times,
+        :prices => actual.prices,
+        :region => fill(actual.region, length(actual.prices)),
+    )
 end
 
 ####### FORECAST PRICES #######
@@ -170,21 +179,17 @@ function _concatenate_forecast_data(pd_data::DataFrame, p5_data::DataFrame)
         unique(p5_data.actual_run_time), unique(p5_data.forecasted_time)
     )
     if (
-        (pd_rtimes[1] != p5_rtimes[1]) ||
-        (pd_rtimes[end] != p5_rtimes[end]) ||
-        (pd_ftimes[1] != p5_ftimes[1]) ||
-        (pd_ftimes[end] != p5_ftimes[end])
+        ((pd_rtimes[1] != p5_rtimes[1]) || (pd_rtimes[end] != p5_rtimes[end])) ||
+        ((pd_ftimes[1] != p5_ftimes[1]) || (pd_ftimes[end] != p5_ftimes[end]))
     )
-        warning = (
-            "PD and P5 datasets not aligned by run times or by forecasted times." *
-            " The number of forecast entries across run/forecasted time may not be consistent"
-        )
-        @warn warning
+        aligned = false
+    else
+        aligned = true
     end
     # concatenate Data
     forecast_data = vcat(pd_data, p5_data)
     sort!(forecast_data, [:forecasted_time, :actual_run_time, :REGIONID])
-    return forecast_data
+    return (forecast_data, aligned)
 end
 
 """
@@ -202,17 +207,20 @@ Filters forecast prices based on supplied `run_times` (start, end) and `forecast
 Filtered [`ForecastPrice`](@ref)
 """
 function _get_data_by_times!(
-    forecast_data::DataFrame;
+    forecast_data::DataFrame,
+    forecast_type::String;
     run_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
     forecasted_times::Union{Tuple{DateTime,DateTime},Nothing}=nothing,
 )
     if !isnothing(run_times)
         @assert(run_times[1] ≤ run_times[2], "Start time should be ≤ end time")
         @assert(
-            forecast_data.actual_run_time[1] ≤ run_times[1], "Start time before data start"
+            forecast_data.actual_run_time[1] ≤ run_times[1],
+            "Start time before $forecast_type start"
         )
         @assert(
-            forecast_data.actual_run_time[end] ≥ run_times[end], "End time after data end"
+            forecast_data.actual_run_time[end] ≥ run_times[end],
+            "End time after $forecast_type end"
         )
         filter!(:actual_run_time => dt -> run_times[1] ≤ dt ≤ run_times[2], forecast_data)
     end
@@ -221,15 +229,15 @@ function _get_data_by_times!(
             forecasted_times[1] ≤ forecasted_times[2], "Start time should be ≤ end time"
         )
         @assert(
-            forecast_data.forecated_time[1] ≤ forecasted_times[1],
-            "Start time before data start"
+            forecast_data.forecasted_time[1] ≤ forecasted_times[1],
+            "Start time before $forecast_type start"
         )
         @assert(
-            forecast_data.forecasted_time[2] ≥ forecasted_times[end],
-            "End time after data end"
+            forecast_data.forecasted_time[end] ≥ forecasted_times[end],
+            "End time after $forecast_type end"
         )
         filter!(
-            forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
+            :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
             forecast_data,
         )
     end
@@ -251,22 +259,26 @@ function get_ForecastData(
         filter!(:REGIONID => x -> x == region, df)
     end
     @debug "Calculating actual run times and dropping original run time col"
-    for (df, minutes) in zip((pd_df, p5_df), (5, 30))
+    for (df, minutes) in zip((pd_df, p5_df), (30, 5))
         df[!, :actual_run_time] = df[!, :run_time] .- Minute(minutes)
         select!(df, Not(:run_time))
     end
+    @debug "Imputing predispatch data"
+    imputed_pd_df = _impute_predispatch_data(pd_df)
+    # impute before filtering by time as imputation forward fills runs
     @debug "Filtering PD and P5 DataFrames by times and dropping nominal run time col"
-    for df in (pd_df, p5_df)
+    for (ftype, df) in zip(("predispatch", "p5min"), (imputed_pd_df, p5_df))
         if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
             _get_data_by_times!(
-                df; run_times=run_time_window, forecasted_times=forecasted_time_window
+                df,
+                ftype;
+                run_times=run_time_window,
+                forecasted_times=forecasted_time_window,
             )
         end
     end
-    @debug "Imputing predispatch data"
-    imputed_pd_df = _impute_predispatch_data(pd_df)
     @debug "Concatenating PD and P5 datasets to make a forecast dataset"
-    forecast_data = _concatenate_forecast_data(imputed_pd_df, p5_df)
+    (forecast_data, aligned) = _concatenate_forecast_data(imputed_pd_df, p5_df)
     sort!(forecast_data, [:actual_run_time, :forecasted_time])
     τ = _get_times_frequency_in_hours(
         forecast_data[
@@ -275,12 +287,29 @@ function get_ForecastData(
         ],
     )
     disallowmissing!(forecast_data)
+    if !aligned
+        warning = (
+            "PD and P5 datasets not aligned. The number of forecast entries across " *
+            "run/forecasted times may not be consistent"
+        )
+        @warn warning
+    end
     forecast = ForecastData(
         region,
         forecast_data.actual_run_time,
         forecast_data.forecasted_time,
         Float64.(forecast_data.RRP),
         τ,
+        aligned,
     )
     return forecast
+end
+
+function Base.convert(DataFrame, forecast::ForecastData)
+    return DataFrame(
+        :actual_run_times => forecast.run_times,
+        :forecasted_times => forecast.forecasted_times,
+        :prices => forecast.prices,
+        :region => fill(forecast.region, length(forecast.prices)),
+    )
 end
