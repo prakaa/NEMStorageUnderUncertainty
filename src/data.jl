@@ -57,18 +57,19 @@ function get_ActualData(
     region::String,
     actual_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
 )
+    actual_df = copy(actual_data)
     if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
         throw(ArgumentError("Invalid region"))
     end
     @debug "Filtering actual prices by region"
-    filter!(:REGIONID => x -> x == region, actual_data)
-    disallowmissing!(actual_data)
-    τ = _get_times_frequency_in_hours(actual_data.SETTLEMENTDATE)
+    filter!(:REGIONID => x -> x == region, actual_df)
+    disallowmissing!(actual_df)
+    τ = _get_times_frequency_in_hours(actual_df.SETTLEMENTDATE)
     if !isnothing(actual_time_window)
         @debug "Filtering actual prices by time"
-        actual_data = _get_data_by_times(actual_data, actual_time_window)
+        actual_df = _get_data_by_times(actual_data, actual_time_window)
     end
-    actual = ActualData(region, actual_data.SETTLEMENTDATE, actual_data.RRP, τ)
+    actual = ActualData(region, actual_df.SETTLEMENTDATE, actual_data.RRP, τ)
     return actual
 end
 
@@ -241,21 +242,21 @@ function get_ForecastData(
     run_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
     forecasted_time_window::Union{Nothing,Tuple{DateTime,DateTime}}=nothing,
 )
-    (p5_df, pd_df) = (copy(p5_data), copy(pd_data))
+    (pd_df, p5_df) = (copy(pd_data), copy(p5_data))
     if region ∉ ("QLD1", "NSW1", "VIC1", "SA1", "TAS1")
         throw(ArgumentError("Invalid region"))
     end
     @debug "Filtering PD and P5 DataFrames by region"
-    for df in (p5_df, pd_df)
+    for df in (pd_df, p5_df)
         filter!(:REGIONID => x -> x == region, df)
     end
     @debug "Calculating actual run times and dropping original run time col"
-    for (df, minutes) in zip((p5_df, pd_df), (5, 30))
+    for (df, minutes) in zip((pd_df, p5_df), (5, 30))
         df[!, :actual_run_time] = df[!, :run_time] .- Minute(minutes)
         select!(df, Not(:run_time))
     end
     @debug "Filtering PD and P5 DataFrames by times and dropping nominal run time col"
-    for df in (p5_df, pd_df)
+    for df in (pd_df, p5_df)
         if !isnothing(run_time_window) || !isnothing(forecasted_time_window)
             _get_data_by_times!(
                 df; run_times=run_time_window, forecasted_times=forecasted_time_window
