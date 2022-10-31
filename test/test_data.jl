@@ -22,7 +22,7 @@ end
 @testset "Run Forecast Data Tests" begin
     test_data_path = joinpath(@__DIR__, "test_data")
     (pd_df, p5_df) = NEMStorageUnderUncertainty.get_all_pd_and_p5_data(
-        joinpath(test_data_path, "forecast_price", "PD"),
+        joinpath(test_data_path, "forecast_price", "PREDISPATCH"),
         joinpath(test_data_path, "forecast_price", "P5MIN"),
     )
     @test p5_df.run_time[1] == DateTime(2021, 1, 1, 0, 5, 0)

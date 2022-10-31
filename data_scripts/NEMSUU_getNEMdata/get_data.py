@@ -28,14 +28,14 @@ def main():
         "PREDISPATCH",
         "PRICE",
         nemseer_cache / "PREDISPATCH",
-        forecasted_start=analysis_start,
-        forecasted_end=analysis_end,
+        run_start=analysis_start,
+        run_end=analysis_end,
     )
 
     download_raw_data(
         "P5MIN",
         "REGIONSOLUTION",
         nemseer_cache / "P5MIN",
-        forecasted_start=analysis_start,
-        forecasted_end=analysis_end,
+        run_start=analysis_start,
+        run_end=analysis_end,
     )
