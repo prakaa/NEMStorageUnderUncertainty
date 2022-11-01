@@ -50,10 +50,14 @@ simulation parameters.
 
 # Returns
 
-1. `decision_intervals`: `data.times` indices that correspond to decision points
-2. `binding_intervals`: Tuple of `data.times` indices that correspond to the first and last
+`DataFrame` with the following columns:
+
+1. `decision_interval`: `data.times` indices that correspond to decision points
+2. `binding_start`: `data.times` indices that correspond to the first
    binding period for each simulation.
-3. `horizon_ends`: `data.times` indices that correspond to the horizon end for
+3. `binding_end`: `data.times` indices that correspond to the last
+   binding period for each simulation.
+4. `horizon_end`: `data.times` indices that correspond to the horizon end for
    each simulation
 
 """
@@ -93,24 +97,51 @@ function _get_periods_for_simulation(
             " (need data to $(decision_end_time + horizon))"
         )
     )
-    decision_intervals = Int64[]
-    binding_intervals = Tuple{Int64,Int64}[]
-    horizon_ends = Int64[]
+    n_iterations = length(decision_start_time:binding:decision_end_time)
+    period_data = Array{Int64,2}(undef, n_iterations, 4)
+    n = 1
     while decision_start ≤ decision_end
         binding_end = decision_start + binding_n
-        push!(decision_intervals, decision_start)
-        push!(binding_intervals, (binding_start, binding_end))
-        push!(horizon_ends, horizon_end)
+        period_data[n, 1] = decision_start
+        period_data[n, 2] = binding_start
+        period_data[n, 3] = binding_end
+        period_data[n, 4] = horizon_end
         decision_start = binding_end
         (binding_start, horizon_end) = (decision_start + 1, decision_start + horizon_n)
+        n += 1
     end
-    @assert(
-        length(binding_intervals) == length(horizon_ends) == length(binding_intervals),
-        "Length mismatch between returned vectors"
-    )
-    return decision_intervals, binding_intervals, horizon_ends
+    period_data = DataFrame(period_data, :auto)
+    rename!(period_data, [:decision_interval, :binding_start, :binding_end, :horizon_end])
+    return period_data
 end
 
+"""
+Gets decision points, binding intervals and horizon ends given [`ForecastData`](@ref) and
+simulation parameters.
+
+# Arguments
+
+  - `decision_start_time`: Decision start time. Applies to `run_time`
+  - `decision_end_time`: Decision end time. Applies to `run_time`
+  - `binding`: `decision_time` + `binding` gives the last binding period.
+    Applies to `forecasted_time`
+  - `horizon`: `decision_time` + `horizon` gives the end of the simulation horizon.
+    Applies to `forecasted_time`
+  - `data`: [`ForecastData`](@ref)
+
+# Returns
+
+`DataFrame` with the following columns:
+
+1. `decision_interval`: `data.times` indices that correspond to `run_time` decision points
+2. `binding_start`: `data.times` indices that correspond to the first
+   binding period for each simulation. Applies to `forecasted_time`.
+3. `binding_end`: `data.times` indices that correspond to the last
+   binding period for each simulation. Applies to `forecasted_time`
+4. `horizon_end`: `data.times` indices that correspond to the horizon end for
+   each simulation. Applies to `forecasted_time`
+
+"""
 function _get_periods_for_simulation(
     decision_start_time::DateTime,
     decision_end_time::DateTime,
@@ -157,6 +188,13 @@ function _get_periods_for_simulation(
     decision_n = decision_start
     rt_index_ref = _create_run_time_index_ref(data)
     index_ref = findfirst(i -> i == decision_start, rt_index_ref)
+    @assert(
+        (length(rt_index_ref) - index_ref) % binding_n == 0,
+        (
+            "An integer number of decision times cannot be run between decision start and " *
+            "end times. Change these, or change the binding time"
+        )
+    )
     n_iterations = length(decision_start_time:binding:decision_end_time)
     period_data = Array{Int64,2}(undef, n_iterations, 4)
     n = 1
