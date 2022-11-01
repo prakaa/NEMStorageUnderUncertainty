@@ -1,6 +1,6 @@
-# Model Building
+# Model Building and Execution
 
 ```@autodocs
 Modules = [NEMStorageUnderUncertainty]
-Pages = ["model/build.jl"]
+Pages = ["model/build_and_run.jl"]
 ```
