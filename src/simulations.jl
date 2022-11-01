@@ -121,6 +121,12 @@ function _get_periods_for_simulation(
     function _get_first_index_for_time(vec::Vector{DateTime}, dt::DateTime)
         return findfirst(t -> t == dt, vec)
     end
+    function _create_run_time_index_ref(data::ForecastData)
+        df = convert(DataFrame, data)
+        df[!, :index] = 1:size(df)[1]
+        first_idx = combine(groupby(df, :actual_run_times), :index => first)
+        return first_idx[!, :index_first]
+    end
 
     @assert(data.run_time_aligned, "ForecastData should be aligned by run times")
     interval_length = Minute(Int64(data.τ * 60.0))
@@ -149,12 +155,13 @@ function _get_periods_for_simulation(
     (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
     decision_n = decision_start
-    decision_intervals = Int64[]
-    binding_intervals = Tuple{Int64,Int64}[]
-    horizon_ends = Int64[]
-    p = Progress(length(decision_start_time:Minute(5):decision_end_time), "Prog", 1)
+    rt_index_ref = _create_run_time_index_ref(data)
+    index_ref = findfirst(i -> i == decision_start, rt_index_ref)
+    n_iterations = length(decision_start_time:binding:decision_end_time)
+    period_data = Array{Int64,2}(undef, n_iterations, 4)
+    n = 1
     while decision_n ≤ decision_end
-        push!(decision_intervals, decision_n)
+        period_data[n, 1] = decision_n
         decision_time = run_times[decision_n]
         binding_start = decision_n
         binding_end = decision_n + binding_n - 1
@@ -165,7 +172,8 @@ function _get_periods_for_simulation(
                 "($(decision_time + binding)) for run time $decision_time"
             )
         )
-        push!(binding_intervals, (binding_start, binding_end))
+        period_data[n, 2] = binding_start
+        period_data[n, 3] = binding_end
         horizon_end = decision_n + horizon_n - 1
         @assert(
             forecasted_times[horizon_end] == decision_time + horizon,
@@ -174,15 +182,18 @@ function _get_periods_for_simulation(
                 "($(decision_time + horizon)) for run time $decision_time"
             )
         )
-        push!(horizon_ends, horizon_end)
-        decision_n = _get_first_index_for_time(run_times, forecasted_times[binding_end])
-        next!(p)
+        period_data[n, 4] = horizon_end
+        index_ref += binding_n
+        if index_ref > length(rt_index_ref)
+            decision_n += 1
+        else
+            decision_n = rt_index_ref[index_ref]
+        end
+        n += 1
     end
-    @assert(
-        length(binding_intervals) == length(horizon_ends) == length(binding_intervals),
-        "Length mismatch between returned vectors"
-    )
-    return decision_intervals, binding_intervals, horizon_ends
+    period_data = DataFrame(period_data, :auto)
+    rename!(period_data, [:decision_interval, :binding_start, :binding_end, :horizon_end])
+    return period_data
 end
 
 function simulate_storage_operation(
