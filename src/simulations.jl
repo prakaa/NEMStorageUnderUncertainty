@@ -97,17 +97,18 @@ function _get_periods_for_simulation(
             " (need data to $(decision_end_time + horizon))"
         )
     )
+    decision_n = decision_start
     n_iterations = length(decision_start_time:binding:decision_end_time)
     period_data = Array{Int64,2}(undef, n_iterations, 4)
     n = 1
-    while decision_start ≤ decision_end
-        binding_end = decision_start + binding_n
-        period_data[n, 1] = decision_start
+    while decision_n ≤ decision_end
+        binding_end = decision_n + binding_n
+        period_data[n, 1] = decision_n
         period_data[n, 2] = binding_start
         period_data[n, 3] = binding_end
         period_data[n, 4] = horizon_end
-        decision_start = binding_end
-        (binding_start, horizon_end) = (decision_start + 1, decision_start + horizon_n)
+        decision_n = binding_end
+        (binding_start, horizon_end) = (decision_n + 1, decision_n + horizon_n)
         n += 1
     end
     period_data = DataFrame(period_data, :auto)
@@ -149,9 +150,34 @@ function _get_periods_for_simulation(
     horizon::T,
     data::ForecastData,
 ) where {T<:Period}
+    function _validate_time_inputs(
+        data::ForecastData, decision_start_time::DateTime, decision_end_time::DateTime
+    )
+        (run_times, forecasted_times) = (data.run_times, data.forecasted_times)
+        @assert(
+            !isnothing(_get_first_index_for_time(run_times, decision_start_time)),
+            "First decision time $(decision_start_time) not in data.run_times"
+        )
+        @assert(
+            !isnothing(_get_first_index_for_time(run_times, decision_end_time)),
+            "Last decision time $(decision_end_time) not in data.run_times"
+        )
+        @assert(
+            !isnothing(
+                _get_first_index_for_time(forecasted_times, decision_end_time + horizon)
+            ),
+            (
+                "Data insufficient to run final decision point at $(decision_end_time)" *
+                " (forecasted data should go up to $(decision_end_time + horizon))"
+            )
+        )
+        return run_times, forecasted_times
+    end
+
     function _get_first_index_for_time(vec::Vector{DateTime}, dt::DateTime)
         return findfirst(t -> t == dt, vec)
     end
+
     function _create_run_time_index_ref(data::ForecastData)
         df = convert(DataFrame, data)
         df[!, :index] = 1:size(df)[1]
@@ -161,27 +187,12 @@ function _get_periods_for_simulation(
 
     @assert(data.run_time_aligned, "ForecastData should be aligned by run times")
     interval_length = Minute(Int64(data.τ * 60.0))
-    (run_times, forecasted_times) = (data.run_times, data.forecasted_times)
-    @assert(
-        !isnothing(_get_first_index_for_time(run_times, decision_start_time)),
-        "First decision time $(decision_start_time) not in data.run_times"
-    )
-    @assert(
-        !isnothing(_get_first_index_for_time(run_times, decision_end_time)),
-        "Last decision time $(decision_end_time) not in data.run_times"
+    (run_times, forecasted_times) = _validate_time_inputs(
+        data, decision_start_time, decision_end_time
     )
     (decision_start, decision_end) = (
         _get_first_index_for_time(run_times, decision_start_time),
         _get_first_index_for_time(run_times, decision_end_time),
-    )
-    @assert(
-        !isnothing(
-            _get_first_index_for_time(forecasted_times, decision_end_time + horizon)
-        ),
-        (
-            "Data insufficient to run final decision point at $(decision_end_time)" *
-            " (forecasted data should go up to $(decision_end_time + horizon))"
-        )
     )
     (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
@@ -191,8 +202,8 @@ function _get_periods_for_simulation(
     @assert(
         (length(rt_index_ref) - index_ref) % binding_n == 0,
         (
-            "An integer number of decision times cannot be run between decision start and " *
-            "end times. Change these, or change the binding time"
+            "An integer number of decision times cannot be run between decision start " *
+            "and end times. Change these, or change the binding time"
         )
     )
     n_iterations = length(decision_start_time:binding:decision_end_time)
@@ -201,6 +212,7 @@ function _get_periods_for_simulation(
     while decision_n ≤ decision_end
         period_data[n, 1] = decision_n
         decision_time = run_times[decision_n]
+        # binding applies to forecasted_time
         binding_start = decision_n
         binding_end = decision_n + binding_n - 1
         @assert(
@@ -212,6 +224,7 @@ function _get_periods_for_simulation(
         )
         period_data[n, 2] = binding_start
         period_data[n, 3] = binding_end
+        # horizon applies to forecasted_time
         horizon_end = decision_n + horizon_n - 1
         @assert(
             forecasted_times[horizon_end] == decision_time + horizon,
