@@ -80,6 +80,29 @@ function _update_storage_state(
     return copy(storage, new_soc₀, period_throughput_mwh)
 end
 
+"""
+Gets decision points, binding intervals and horizon ends given [`ActualData`](@ref) and
+simulation parameters.
+
+# Arguments
+
+  - `decision_start_time`: Decision start time. `decision_start_time` need not be in
+    `data.times`, so long as the first binding time (`decision_start_time + τ`)
+    is contained in `data.times`.
+  - `decision_end_time`: Decision end time.
+  - `binding`: `decision_time` + `binding` gives the last binding period
+  - `horizon`: `decision_time` + `horizon` gives the end of the simulation horizon
+  - `data`: [`ActualData`](@ref)
+
+# Returns
+
+1. `decision_intervals`: `data.times` indices that correspond to decision points
+2. `binding_intervals`: Tuple of `data.times` indices that correspond to the first and last
+   binding period for each simulation.
+3. `horizon_ends`: `data.times` indices that correspond to the horizon end for
+   each simulation
+
+"""
 function _get_periods_for_simulation(
     decision_start_time::DateTime,
     decision_end_time::DateTime,
