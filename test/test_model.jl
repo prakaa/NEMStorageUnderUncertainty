@@ -20,7 +20,7 @@ function test_run_model(data_path::String, start_time::DateTime, end_time::DateT
     actual = NEMStorageUnderUncertainty.get_ActualData(
         actual_data, "NSW1", (start_time, end_time)
     )
-    model = NEMStorageUnderUncertainty._run_model(
+    model = NEMStorageUnderUncertainty.run_model(
         HiGHS.Optimizer,
         bess,
         actual.prices,
