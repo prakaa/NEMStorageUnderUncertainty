@@ -118,10 +118,6 @@ function _get_periods_for_simulation(
     horizon::T,
     data::ForecastData,
 ) where {T<:Period}
-    function _get_indices_for_time(vec::Vector{DateTime}, dt::DateTime)
-        return findall(t -> t == dt, vec)
-    end
-
     function _get_first_index_for_time(vec::Vector{DateTime}, dt::DateTime)
         return findfirst(t -> t == dt, vec)
     end
@@ -130,11 +126,11 @@ function _get_periods_for_simulation(
     interval_length = Minute(Int64(data.τ * 60.0))
     (run_times, forecasted_times) = (data.run_times, data.forecasted_times)
     @assert(
-        !isempty(_get_indices_for_time(run_times, decision_start_time)),
+        !isnothing(_get_first_index_for_time(run_times, decision_start_time)),
         "First decision time $(decision_start_time) not in data.run_times"
     )
     @assert(
-        !isempty(_get_indices_for_time(run_times, decision_end_time)),
+        !isnothing(_get_first_index_for_time(run_times, decision_end_time)),
         "Last decision time $(decision_end_time) not in data.run_times"
     )
     (decision_start, decision_end) = (
@@ -142,7 +138,9 @@ function _get_periods_for_simulation(
         _get_first_index_for_time(run_times, decision_end_time),
     )
     @assert(
-        !isempty(_get_indices_for_time(forecasted_times, decision_end_time + horizon)),
+        !isnothing(
+            _get_first_index_for_time(forecasted_times, decision_end_time + horizon)
+        ),
         (
             "Data insufficient to run final decision point at $(decision_end_time)" *
             " (forecasted data should go up to $(decision_end_time + horizon))"
@@ -154,14 +152,11 @@ function _get_periods_for_simulation(
     decision_intervals = Int64[]
     binding_intervals = Tuple{Int64,Int64}[]
     horizon_ends = Int64[]
+    p = Progress(length(decision_start_time:Minute(5):decision_end_time), "Prog", 1)
     while decision_n ≤ decision_end
         push!(decision_intervals, decision_n)
         decision_time = run_times[decision_n]
-        decision_time_indices = _get_indices_for_time(run_times, decision_time)
-        binding_start = intersect(
-            decision_time_indices,
-            findall(t -> t == decision_time + interval_length, forecasted_times),
-        )[]
+        binding_start = decision_n
         binding_end = decision_n + binding_n - 1
         @assert(
             forecasted_times[binding_end] == decision_time + binding,
@@ -181,6 +176,7 @@ function _get_periods_for_simulation(
         )
         push!(horizon_ends, horizon_end)
         decision_n = _get_first_index_for_time(run_times, forecasted_times[binding_end])
+        next!(p)
     end
     @assert(
         length(binding_intervals) == length(horizon_ends) == length(binding_intervals),
