@@ -42,7 +42,7 @@ include("model/formulations.jl")
 include("model/variables.jl")
 include("model/constraints.jl")
 include("model/objectives.jl")
-include("model/build.jl")
+include("model/build_and_run.jl")
 ## Simulations
 include("simulations.jl")
 ## Utilities
