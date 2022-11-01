@@ -1,48 +1,4 @@
 """
-Runs a model using data in `prices`, `times` and τ (interval duration in hours).
-The type of model constructed and run is dependent on the `formulation`
-
-# Arguments
-  * `optimizer`: A solver optimizer
-  * `storage`: [`StorageDevice`](@ref)
-  * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
-  * `times`: Times to run model for
-  * `τ`: Interval duration in hours
-  * `formulation`: A model formulation ([`StorageModelFormulation`](@ref))
-
-# Returns
-
-  * A JuMP model if the solution is optimal (within solver tolerances)
-  * A JuMP model with warning if a time/iteration limit is hit
-  * Throws and error if infeasible/unbounded/etc.
-"""
-function _run_model(
-    optimizer::DataType,
-    storage::StorageDevice,
-    prices::Vector{<:AbstractFloat},
-    times::Vector{DateTime},
-    τ::Float64,
-    formulation::StorageModelFormulation;
-)
-    @debug "Filtering by region, then obtaining times and prices"
-    @debug "Building model"
-    model = build_storage_model(storage, prices, times, τ, formulation)
-    JuMP.set_optimizer(model, optimizer)
-    @debug "Begin model solving"
-    JuMP.optimize!(model)
-    if JuMP.termination_status(model) == JuMP.OPTIMAL
-        return model
-    elseif JuMP.termination_status(model) == JuMP.TIME_LIMIT ||
-        JuMP.termination_status(model) == JuMP.ITERATION_LIMIT
-        @warn "Model run between $(times[1]) and $(times[end]) hit iteration/time limit"
-        return model
-    else
-        @error "Error in model run between $(times[1]) and $(times[end])" model
-        error("Model error")
-    end
-end
-
-"""
 "Updates" (via new `StorageDevice`) storage state between model runs. Specifically:
 
   * Updates `soc₀` to reflect `soc` at end of last model run
@@ -86,9 +42,7 @@ simulation parameters.
 
 # Arguments
 
-  - `decision_start_time`: Decision start time. `decision_start_time` need not be in
-    `data.times`, so long as the first binding time (`decision_start_time + τ`)
-    is contained in `data.times`.
+  - `decision_start_time`: Decision start time.
   - `decision_end_time`: Decision end time.
   - `binding`: `decision_time` + `binding` gives the last binding period
   - `horizon`: `decision_time` + `horizon` gives the end of the simulation horizon
@@ -112,18 +66,19 @@ function _get_periods_for_simulation(
 ) where {T<:Period}
     interval_length = Minute(Int64(data.τ * 60.0))
     times = data.times
-    binding_start = findfirst(t -> t == decision_start_time + interval_length, times)
-    @assert(
-        !isnothing(binding_start),
-        "First binding interval $(decision_start_time + interval_length) not in data.times"
-    )
     (decision_start, decision_end) = (
-        binding_start - 1, findfirst(t -> t == decision_end_time, times)
+        findfirst(t -> t == decision_start_time, times),
+        findfirst(t -> t == decision_end_time, times),
+    )
+    @assert(
+        !isnothing(decision_start),
+        "First decision time $(decision_start_time) not in data.times"
     )
     @assert(
         !isnothing(decision_end),
         "Last decision time $(decision_end_time) not in data.times"
     )
+    binding_start = decision_start + 1
     (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
     horizon_end = decision_start + horizon_n
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
