@@ -221,7 +221,7 @@ function _concatenate_forecast_data(pd_data::DataFrame, p5_data::DataFrame)
     end
     # concatenate Data
     forecast_data = vcat(pd_data, p5_data)
-    sort!(forecast_data, [:forecasted_time, :actual_run_time, :REGIONID])
+    sort!(forecast_data, [:actual_run_time, :forecasted_time, :REGIONID])
     return (forecast_data, run_time_aligned)
 end
 
@@ -329,7 +329,6 @@ function get_ForecastData(
     end
     @debug "Concatenating PD and P5 datasets to make a forecast dataset"
     (forecast_data, run_time_aligned) = _concatenate_forecast_data(imputed_pd_df, p5_df)
-    sort!(forecast_data, [:actual_run_time, :forecasted_time])
     τ = _get_times_frequency_in_hours(
         forecast_data[
             forecast_data.actual_run_time .== forecast_data.actual_run_time[1],
