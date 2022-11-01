@@ -81,34 +81,48 @@ function _update_storage_state(
 end
 
 function _get_periods_for_simulation(
-    binding::T, horizon::T, data::ActualData
+    decision_start_time::DateTime,
+    decision_end_time::DateTime,
+    binding::T,
+    horizon::T,
+    data::ActualData,
 ) where {T<:Period}
-    τ = data.τ
+    interval_length = Minute(Int64(data.τ * 60.0))
     times = data.times
-    (binding_min, horizon_min) = Minute.((binding, horizon))
-    (binding_n, horizon_n) = @. Dates.value((binding_min, horizon_min) / (τ * 60.0))
+    binding_start = findfirst(t -> t == decision_start_time + interval_length, times)
+    (decision_start, decision_end) = (
+        binding_start - 1, findfirst(t -> t == decision_end_time, times)
+    )
+    (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
+    horizon_end = decision_start + horizon_n
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
     @assert(
         horizon_n ≤ length(times),
         "Horizon is longer than data (max of ($(data.times[end] - data.times[1]))"
     )
+    @assert(
+        decision_end + horizon_n ≤ length(times),
+        (
+            "Data insufficient to run final decision point at $(decision_end_time)" *
+            "(need data to $(decision_end_time + horizon)"
+        )
+    )
+    decision_intervals = Int64[]
     binding_intervals = Tuple[]
     horizon_ends = Int64[]
-    (binding_start, horizon_end) = (1, horizon_n)
-    while horizon_end ≤ length(times)
-        binding_end = binding_start + binding_n - 1
+    while decision_start ≤ decision_end
+        binding_end = decision_start + binding_n
+        push!(decision_intervals, decision_start)
         push!(binding_intervals, (binding_start, binding_end))
         push!(horizon_ends, horizon_end)
-        binding_start = binding_end + 1
-        horizon_end = binding_start + horizon_n - 1
+        decision_start = binding_end
+        (binding_start, horizon_end) = (decision_start + 1, decision_start + horizon_n)
     end
-    binding_intervals = binding_intervals[horizon_ends .≤ length(times)]
-    filter!(x -> x ≤ length(times), horizon_ends)
     @assert(
-        length(binding_intervals) == length(horizon_ends),
-        "Length mismatch between binding periods and horizon end vectors"
+        length(binding_intervals) == length(horizon_ends) == length(binding_intervals),
+        "Length mismatch between returned vectors"
     )
-    return binding_intervals, horizon_ends
+    return decision_intervals, binding_intervals, horizon_ends
 end
 
 function simulate_storage_operation(
