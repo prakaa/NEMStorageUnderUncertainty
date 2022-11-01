@@ -14,8 +14,9 @@ end
 """
 A data structure used to store forecast price data and metadata
 
-`aligned` indicates whether PD and P5MIN raw data used to construct a `ForecastData`
-instance were aligned along `forecasted_time`, i.e. same start and end `forecasted_time`.
+`run_time_aligned` indicates whether PD and P5MIN raw data used to construct
+a `ForecastData` instance were aligned along `actual_run_time`,
+i.e. same start and end `actual_run_time`.
 """
 struct ForecastData{T<:AbstractFloat} <: NEMData
     region::String
@@ -23,7 +24,7 @@ struct ForecastData{T<:AbstractFloat} <: NEMData
     forecasted_times::Vector{DateTime}
     prices::Vector{T}
     τ::T
-    aligned::Bool
+    run_time_aligned::Bool
 end
 
 ####### ACTUAL PRICES #######
@@ -211,17 +212,17 @@ function _concatenate_forecast_data(pd_data::DataFrame, p5_data::DataFrame)
     pd_data = _drop_overlapping_PD_forecasts(pd_data)
     pd_data = pd_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
     p5_data = p5_data[:, [:actual_run_time, :forecasted_time, :REGIONID, :RRP]]
-    pd_ftimes = unique(pd_data.forecasted_time)
-    p5_ftimes = unique(p5_data.forecasted_time)
-    if ((pd_ftimes[1] != p5_ftimes[1]) || (pd_ftimes[end] != p5_ftimes[end]))
-        aligned = false
+    pd_rtimes = unique(pd_data.actual_run_time)
+    p5_rtimes = unique(p5_data.actual_run_time)
+    if ((pd_rtimes[1] != p5_rtimes[1]) || (pd_rtimes[end] != p5_rtimes[end]))
+        run_time_aligned = false
     else
-        aligned = true
+        run_time_aligned = true
     end
     # concatenate Data
     forecast_data = vcat(pd_data, p5_data)
     sort!(forecast_data, [:forecasted_time, :actual_run_time, :REGIONID])
-    return (forecast_data, aligned)
+    return (forecast_data, run_time_aligned)
 end
 
 """
@@ -266,10 +267,12 @@ function _get_data_by_times!(
             forecast_data.forecasted_time[1] ≤ forecasted_times[1],
             "Forecasted start time before $forecast_type start"
         )
-        @assert(
-            forecast_data.forecasted_time[end] ≥ forecasted_times[end],
-            "Forecasted end time after $forecast_type end"
-        )
+        if isnothing(run_times)
+            @assert(
+                forecast_data.forecasted_time[end] ≥ forecasted_times[end],
+                "Forecasted end time after $forecast_type end"
+            )
+        end
         filter!(
             :forecasted_time => dt -> forecasted_times[1] ≤ dt ≤ forecasted_times[2],
             forecast_data,
@@ -325,7 +328,7 @@ function get_ForecastData(
         end
     end
     @debug "Concatenating PD and P5 datasets to make a forecast dataset"
-    (forecast_data, aligned) = _concatenate_forecast_data(imputed_pd_df, p5_df)
+    (forecast_data, run_time_aligned) = _concatenate_forecast_data(imputed_pd_df, p5_df)
     sort!(forecast_data, [:actual_run_time, :forecasted_time])
     τ = _get_times_frequency_in_hours(
         forecast_data[
@@ -334,8 +337,8 @@ function get_ForecastData(
         ],
     )
     disallowmissing!(forecast_data)
-    if !aligned
-        warning = ("PD and P5 datasets not aligned to the same forecasted times")
+    if !run_time_aligned
+        warning = ("PD and P5 datasets not aligned to the same run times")
         @warn warning
     end
     forecast = ForecastData(
@@ -344,7 +347,7 @@ function get_ForecastData(
         forecast_data.forecasted_time,
         Float64.(forecast_data.RRP),
         τ,
-        aligned,
+        run_time_aligned,
     )
     return forecast
 end
