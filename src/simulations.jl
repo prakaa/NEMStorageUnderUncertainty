@@ -113,8 +113,16 @@ function _get_periods_for_simulation(
     interval_length = Minute(Int64(data.τ * 60.0))
     times = data.times
     binding_start = findfirst(t -> t == decision_start_time + interval_length, times)
+    @assert(
+        !isnothing(binding_start),
+        "First binding interval $(decision_start_time + interval_length) not in data.times"
+    )
     (decision_start, decision_end) = (
         binding_start - 1, findfirst(t -> t == decision_end_time, times)
+    )
+    @assert(
+        !isnothing(decision_end),
+        "Last decision time $(decision_end_time) not in data.times"
     )
     (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
     horizon_end = decision_start + horizon_n
@@ -127,7 +135,7 @@ function _get_periods_for_simulation(
         decision_end + horizon_n ≤ length(times),
         (
             "Data insufficient to run final decision point at $(decision_end_time)" *
-            "(need data to $(decision_end_time + horizon)"
+            " (need data to $(decision_end_time + horizon)"
         )
     )
     decision_intervals = Int64[]
