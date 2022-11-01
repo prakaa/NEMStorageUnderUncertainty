@@ -27,7 +27,7 @@ end
     )
     @test p5_df.run_time[1] == DateTime(2021, 1, 1, 0, 5, 0)
     @test pd_df.run_time[1] == DateTime(2021, 1, 1, 4, 30, 0)
-    warning = ("PD and P5 datasets not aligned to the same forecasted times")
+    warning = ("PD and P5 datasets not aligned to the same run times")
     @test_logs (:warn, warning) NEMStorageUnderUncertainty.get_ForecastData(
         pd_df, p5_df, "NSW1", nothing, nothing
     )
@@ -44,13 +44,13 @@ end
 
     @testset "Run forecasted time tests" begin
         ftimes = (DateTime(2021, 1, 12, 0, 0, 0), DateTime(2021, 1, 12, 23, 55, 0))
-        aligned_ftime = NEMStorageUnderUncertainty.get_ForecastData(
+        ftime_filter = NEMStorageUnderUncertainty.get_ForecastData(
             pd_df, p5_df, "NSW1", nothing, ftimes
         )
-        @test aligned_ftime.aligned == true
-        aligned_ftime = convert(DataFrame, aligned_ftime)
-        @test aligned_ftime.forecasted_times[1] == ftimes[1]
-        @test aligned_ftime.forecasted_times[end] == ftimes[end]
+        @test ftime_filter.run_time_aligned == false
+        ftime_filter = convert(DataFrame, ftime_filter)
+        @test ftime_filter.forecasted_times[1] == ftimes[1]
+        @test ftime_filter.forecasted_times[end] == ftimes[end]
     end
 
     @testset "Run run time tests" begin
@@ -60,37 +60,54 @@ end
             pd_df, p5_df, "NSW1", p5_but_no_pd_times, nothing
         )
         rtimes = (DateTime(2021, 1, 1, 4, 35, 0), DateTime(2021, 1, 1, 12, 0, 0))
-        aligned_rtime = NEMStorageUnderUncertainty.get_ForecastData(
+        filter_rtime = NEMStorageUnderUncertainty.get_ForecastData(
             pd_df, p5_df, "NSW1", rtimes, nothing
         )
-        @test aligned_rtime.aligned == false
-        aligned_rtime = convert(DataFrame, aligned_rtime)
-        @test aligned_rtime.actual_run_times[1] == rtimes[1]
-        @test aligned_rtime.actual_run_times[end] == rtimes[end]
+        @test filter_rtime.run_time_aligned == true
+        filter_rtime = convert(DataFrame, filter_rtime)
+        @test filter_rtime.actual_run_times[1] == rtimes[1]
+        @test filter_rtime.actual_run_times[end] == rtimes[end]
     end
 
     @testset "Run imputation checks" begin
-        ftimes = (DateTime(2021, 1, 2, 4, 30, 0), DateTime(2021, 1, 5, 12, 0, 0))
-        @test_logs (min_level = Logging.Warn) NEMStorageUnderUncertainty.get_ForecastData(
-            pd_df, p5_df, "NSW1", nothing, ftimes
-        )
-        data = convert(
-            DataFrame,
-            NEMStorageUnderUncertainty.get_ForecastData(
+        @testset "Run imputation with forecasted times" begin
+            ftimes = (DateTime(2021, 1, 2, 4, 30, 0), DateTime(2021, 1, 5, 12, 0, 0))
+            @test_logs (:warn, warning) NEMStorageUnderUncertainty.get_ForecastData(
                 pd_df, p5_df, "NSW1", nothing, ftimes
-            ),
-        )
-        rtimes = unique(data[!, :actual_run_times])
-        random_rtime = rtimes[rand(1:288)]
-        data_subset = data[data.actual_run_times .== random_rtime, :]
-        if hour(random_rtime) >= 13
-            end_date = DateTime(2021, 1, day(random_rtime) + 2, 4, 0, 0)
-        else
-            end_date = DateTime(2021, 1, day(random_rtime) + 1, 4, 0, 0)
+            )
+            data = convert(
+                DataFrame,
+                NEMStorageUnderUncertainty.get_ForecastData(
+                    pd_df, p5_df, "NSW1", nothing, ftimes
+                ),
+            )
+            rtimes = unique(data[!, :actual_run_times])
+            random_rtime = rtimes[rand(1:288)]
+            data_subset = data[data.actual_run_times .== random_rtime, :]
+            if hour(random_rtime) > 12 ||
+                (hour(random_rtime) == 12 && minute(random_rtime) >= 30)
+                end_date = DateTime(2021, 1, day(random_rtime) + 2, 4, 0, 0)
+            else
+                end_date = DateTime(2021, 1, day(random_rtime) + 1, 4, 0, 0)
+            end
+            @test data_subset[end, :forecasted_times] == end_date
+            start_time = maximum([ftimes[1], random_rtime + Minute(5)])
+            times = Vector(start_time:Minute(5):end_date)
+            @test times == unique(data_subset.forecasted_times)
         end
-        @test data_subset[end, :forecasted_times] == end_date
-        start_time = maximum([ftimes[1], random_rtime + Minute(5)])
-        times = Vector(start_time:Minute(5):end_date)
-        @test times == unique(data_subset.forecasted_times)
+        @testset "Run imputation with run times" begin
+            rtimes = (DateTime(2021, 1, 1, 4, 30, 0), DateTime(2021, 1, 1, 12, 00, 0))
+            @test_logs (min_level = Logging.Warn) NEMStorageUnderUncertainty.get_ForecastData(
+                pd_df, p5_df, "NSW1", rtimes, nothing
+            )
+            data = convert(
+                DataFrame,
+                NEMStorageUnderUncertainty.get_ForecastData(
+                    pd_df, p5_df, "NSW1", rtimes, nothing
+                ),
+            )
+            ftimes = unique(data.forecasted_times)
+            @test Vector((rtimes[1] + Minute(5)):Minute(5):DateTime(2021, 1, 2, 4, 0, 0)) == ftimes
+        end
     end
 end
