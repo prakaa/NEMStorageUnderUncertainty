@@ -180,8 +180,7 @@ function _get_periods_for_simulation(
             )
         )
         push!(horizon_ends, horizon_end)
-        decision_n = _get_first_index_for_time(run_times, decision_time + interval_length)
-        @show(decision_intervals)
+        decision_n = _get_first_index_for_time(run_times, forecasted_times[binding_end])
     end
     @assert(
         length(binding_intervals) == length(horizon_ends) == length(binding_intervals),
