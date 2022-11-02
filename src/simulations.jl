@@ -230,8 +230,8 @@ function _retrieve_results(
     end
     results = innerjoin(var_solns...; on=:simulated_time)
     results[:, :decision_time] .= decision_time
-    binding = results[binding_start .≤ results.time .≤ binding_end, :]
-    non_binding = results[binding_end .< results.time, :]
+    binding = results[binding_start .≤ results.simulated_time .≤ binding_end, :]
+    non_binding = results[binding_end .< results.simulated_time, :]
     return non_binding, binding
 end
 
@@ -310,8 +310,8 @@ function simulate_storage_operation(
     end
     @showprogress 1 "Simulating..." for (i, sim_period) in enumerate(eachrow(sim_periods))
         sim_indices = sim_period[:binding_start]:1:sim_period[:horizon_end]
-        decision_time = times[sim_period[:descision_interval]]
-        binding_start_time = sim_indices[1]
+        decision_time = times[sim_period[:decision_interval]]
+        binding_start_time = times[sim_indices[1]]
         binding_end_time = times[sim_period[:binding_end]]
         simulate_times = times[sim_indices]
         simulate_prices = prices[sim_indices]
@@ -324,7 +324,7 @@ function simulate_storage_operation(
             model_formulation;
             silent=silent,
             time_limit_sec=time_limit_sec,
-            string_nam=string_names,
+            string_names=string_names,
         )
         non_binding_result, binding_result = _retrieve_results(
             m, decision_time, binding_start_time, binding_end_time
@@ -333,7 +333,7 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        storage = _update_storage_state(storage, binding_results, data.τ, degradation)
+        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
     end
     if capture_all_decisions
         non_binding_df = vcat(non_binding_results...)
