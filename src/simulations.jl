@@ -352,5 +352,6 @@ function simulate_storage_operation(
     else
         results_df = vcat(binding_results...)
     end
+    results_df[:, :lookahead_minutes] .= Dates.value(Minute(horizon))
     return results_df
 end
