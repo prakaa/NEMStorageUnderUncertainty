@@ -248,6 +248,7 @@ end
   * `storage`: [`StorageDevice`](@ref)
   * `model`: Model from [`_run_model`](@ref) with solution values
   * `τ`: Interval duration in hours
+  * `single_period`: `true` if the simulation was a single period simulation
   * `degradation`: No degradation model [`NoDegradation`](@ref)
 
 # Returns
@@ -255,9 +256,13 @@ end
 New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
 """
 function _update_storage_state(
-    storage::StorageDevice, binding_results::DataFrame, τ::Float64, ::NoDegradation
+    storage::StorageDevice,
+    binding_results::DataFrame,
+    τ::Float64,
+    single_period::Bool,
+    ::NoDegradation,
 )
-    if size(binding_results)[1] == 1
+    if single_period
         soc_start = binding_results[1, :soc_mwh]
         charge_mw = binding_results[1, :charge_mw]
         discharge_mw = binding_results[1, :discharge_mw]
@@ -333,7 +338,10 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
+        single_period = length(sim_indices) == 1 ? true : false
+        storage = _update_storage_state(
+            storage, binding_result, data.τ, single_period, degradation
+        )
     end
     if capture_all_decisions
         non_binding_df = vcat(non_binding_results...)
