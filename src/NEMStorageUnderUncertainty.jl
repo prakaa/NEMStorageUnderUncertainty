@@ -47,6 +47,6 @@ include("model/build_and_run.jl")
 ## Simulations
 include("simulations.jl")
 ## Utilities
-include("utils.jl")
+include("simulation_utils.jl")
 
 end

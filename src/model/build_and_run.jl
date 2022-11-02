@@ -1,3 +1,7 @@
+function _get_times_index(t::DateTime, times::Vector{DateTime})
+    return findall(time -> time == t, times)[]
+end
+
 """
 Build a [`StandardArbitrage`](@ref) model
 
