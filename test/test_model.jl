@@ -42,11 +42,11 @@ end
     month_model = test_run_model(
         test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
     )
-    @test isapprox(JuMP.objective_value(month_model), 171887, atol=0.5)
+    @test isapprox(JuMP.objective_value(month_model), 171697, atol=0.5)
     interval_model = test_run_model(
         test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
     )
-    @test JuMP.num_constraints(interval_model; count_variable_in_set_constraints=false) == 5
+    @test JuMP.num_constraints(interval_model; count_variable_in_set_constraints=false) == 3
     @test_logs (
         :warn,
         (
@@ -57,6 +57,6 @@ end
         test_data_path,
         DateTime(2021, 12, 1, 0, 5, 0),
         DateTime(2022, 1, 1, 0, 0, 0);
-        time_limit_sec=1.0,
+        time_limit_sec=0.01,
     )
 end
