@@ -27,35 +27,51 @@ function _add_constraints_charge_state!(
 end
 
 @doc raw"""
-Adds the following constraint to `model`: ``e_1 = e_0``, where ``e_0`` is obtained from
-`storage`.
+Adds the following constraint to `model`:
+
+``e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0``
+
+where ``e_0`` and ``\eta`` are obtained from `storage`.
 
 # Arguments
 
   * `model`: JuMP model
   * `storage`: A [`StorageDevice`](@ref)
   * `times`: A `Vector` of `DateTime`s
+  * `tau`: Interval length in hours
 """
 function _add_constraint_initial_soc!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
+    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}, τ::Float64
 )
     soc_mwh = model[:soc_mwh]
+    charge_mw = model[:charge_mw]
+    discharge_mw = model[:discharge_mw]
     soc₀ = storage.soc₀
-    JuMP.@constraint(model, initial_soc, soc_mwh[times[1]] == soc₀)
+    η_charge = storage.η_charge
+    η_discharge = storage.η_discharge
+    JuMP.@constraint(
+        model,
+        initial_soc,
+        soc_mwh[times[1]] - soc₀ # change in SoC
+        - charge_mw[times[1]] * η_charge * τ # charge in MWh
+        + discharge_mw[times[1]] / η_discharge * τ # discharge in MWh
+            == 0
+    )
 end
 
 @doc raw"""
 Adds the following constraint to `model` if `times` has length ≥ 2:
+
 ``e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0``
 
 ``\eta`` are obtained from `storage`.
-
 
 # Arguments
 
   * `model`: JuMP model
   * `storage`: A [`StorageDevice`](@ref)
   * `times`: A `Vector` of `DateTime`s
+  * `tau`: Interval length in hours
 """
 function _add_constraint_intertemporal_soc!(
     model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}, τ::Float64
@@ -80,42 +96,4 @@ function _add_constraint_intertemporal_soc!(
             η_discharge * τ == 0
         )
     )
-    @debug "Intertemporal SoC constraint added"
-end
-
-@doc raw"""
-Adds the following constraints to `model` if `times` has length = 1:
-* ``e_t + \left( q_t\eta_{charge}\tau\right) \leq \bar{e}``
-* ``e_t - \frac{p_t\tau}{\eta_{discharge}} \geq \underline{e}``
-
-``\eta`` and SoC limits are obtained from `storage`.
-
-
-# Arguments
-
-  * `model`: JuMP model
-  * `storage`: A [`StorageDevice`](@ref)
-  * `times`: A `Vector` of `DateTime`s
-"""
-function _add_constraint_single_period_soc!(
-    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}, τ::Float64
-)
-    @assert(length(times) == 1, "Constraint invalid for multi-period models")
-    η_charge = storage.η_charge
-    η_discharge = storage.η_discharge
-    soc_min = storage.soc_min
-    soc_max = storage.soc_max
-    soc_mwh = model[:soc_mwh]
-    charge_mw = model[:charge_mw]
-    discharge_mw = model[:discharge_mw]
-    JuMP.@constraints(
-        model,
-        begin
-            single_period_soc_upper[t=times],
-            soc_mwh[t] + charge_mw[t] * η_charge * τ ≤ soc_max
-            single_period_soc_lower[t=times],
-            soc_mwh[t] - discharge_mw[t] / η_discharge * τ ≥ soc_min
-        end
-    )
-    @debug "Single period SoC constraint added"
 end

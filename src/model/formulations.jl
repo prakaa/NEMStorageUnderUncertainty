@@ -13,7 +13,7 @@ Maximises storage revenue:
   * All periods are treated (weighted) equally
   * No cycling/throughput limits are modelled
   * Revenue is purely defined by the spot price for energy
-  * Intertemporal SoC constraints are applied
+  * Intertemporal SoC constraints are applied, including from `soc₀` to `soc₁`
 
 ```math
 \begin{aligned}
@@ -25,7 +25,7 @@ Maximises storage revenue:
   & q_t - \bar{p}u_t \leq 0\\
   & \underline{e} \leq e_t \leq \bar{e}    \\
   & e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0\\
-  & e_1 = e_0 \\
+  & e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0\\
 \end{aligned}
 ```
 """

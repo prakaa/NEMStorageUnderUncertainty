@@ -241,16 +241,13 @@ end
 "Updates" (via new `StorageDevice`) storage state between model runs. Specifically:
 
   * Updates `soc₀` to reflect `soc` at end of last model run
-    * Considers `η_discharge` and `η_charge` (explicitly/via intertemporal SoC constraints)
   * Updates storage `throughput` based on model run
-    * Based on *discharged (delivered) energy* and thus does not consider any η
 
 # Arguments
 
   * `storage`: [`StorageDevice`](@ref)
-  * `model`: Model from [`_run_model`](@ref) with solution values
+  * `binding_results`: Binding results from last model run
   * `τ`: Interval duration in hours
-  * `single_period`: `true` if the simulation was a single period simulation
   * `degradation`: No degradation model [`NoDegradation`](@ref)
 
 # Returns
@@ -258,24 +255,10 @@ end
 New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
 """
 function _update_storage_state(
-    storage::StorageDevice,
-    binding_results::DataFrame,
-    τ::Float64,
-    single_period::Bool,
-    ::NoDegradation,
+    storage::StorageDevice, binding_results::DataFrame, τ::Float64, ::NoDegradation
 )
-    if single_period
-        soc_start = binding_results[1, :soc_mwh]
-        charge_mw = binding_results[1, :charge_mw]
-        discharge_mw = binding_results[1, :discharge_mw]
-        new_soc₀ =
-            soc_start + charge_mw * storage.η_charge * τ -
-            discharge_mw / storage.η_discharge * τ
-        period_throughput_mwh = discharge_mw * τ
-    else
-        new_soc₀ = binding_results[end, :soc_mwh]
-        period_throughput_mwh = sum(binding_results[:, :discharge_mw] * τ)
-    end
+    new_soc₀ = binding_results[end, :soc_mwh]
+    period_throughput_mwh = sum(binding_results[:, :discharge_mw] * τ)
     return copy(storage, new_soc₀, period_throughput_mwh)
 end
 
@@ -342,9 +325,8 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        single_period = length(sim_indices) == 1 ? true : false
         storage = _update_storage_state(
-            storage, binding_result, data.τ, single_period, degradation
+            storage, binding_result, data.τ, degradation
         )
         next!(p)
     end
