@@ -38,8 +38,12 @@ function _build_storage_model(
     _add_variable_charge_state!(model, times)
     @debug "Adding constraints"
     _add_constraints_charge_state!(model, storage, times)
-    _add_constraint_intertemporal_soc!(model, storage, times, τ)
     _add_constraint_initial_soc!(model, storage, times)
+    if length(times) == 1
+        _add_constraint_single_period_soc!(model, storage, times, τ)
+    else
+        _add_constraint_intertemporal_soc!(model, storage, times, τ)
+    end
     @debug "Adding objective"
     _add_objective_standard!(model, prices, times, τ)
     return model
