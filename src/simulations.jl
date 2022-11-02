@@ -291,6 +291,7 @@ function simulate_storage_operation(
     horizon::T,
     capture_all_decisions::Bool=false,
     silent::Bool=false,
+    show_progress::Bool=true,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
 ) where {T<:Period}
@@ -315,7 +316,8 @@ function simulate_storage_operation(
     if capture_all_decisions
         non_binding_results = Vector{DataFrame}(undef, size(sim_periods[1]))
     end
-    @showprogress 1 "Simulating..." for (i, sim_period) in enumerate(eachrow(sim_periods))
+    p = Progress(size(sim_periods)[1]; enabled=show_progress)
+    for (i, sim_period) in enumerate(eachrow(sim_periods))
         sim_indices = sim_period[:binding_start]:1:sim_period[:horizon_end]
         decision_time = times[sim_period[:decision_interval]]
         binding_start_time = times[sim_indices[1]]
@@ -344,6 +346,7 @@ function simulate_storage_operation(
         storage = _update_storage_state(
             storage, binding_result, data.τ, single_period, degradation
         )
+        next!(p)
     end
     if capture_all_decisions
         non_binding_df = vcat(non_binding_results...)
