@@ -13,6 +13,7 @@ using DataFrames
 using Dates
 using Impute: Impute
 using JuMP: JuMP
+using Logging
 using ProgressMeter
 
 #DocStringExtensions Templates
