@@ -97,6 +97,14 @@ function _get_periods_for_simulation(
             " (need data to $(decision_end_time + horizon))"
         )
     )
+    @assert(
+        (decision_end - decision_start) % binding_n == 0,
+        (
+            "An integer number of decision times cannot be run between decision start " *
+            "and end times. Change these, or change the binding time" *
+            "(($decision_end - $decision_start) % $binding_n != 0)"
+        )
+    )
     decision_n = decision_start
     n_iterations = length(decision_start_time:binding:decision_end_time)
     period_data = Array{Int64,2}(undef, n_iterations, 4)
@@ -178,10 +186,11 @@ function _get_periods_for_simulation(
         return findfirst(t -> t == dt, vec)
     end
 
-    function _create_run_time_index_ref(data::ForecastData)
+    function _create_run_time_index_ref(data::ForecastData, decision_end_time::DateTime)
         df = convert(DataFrame, data)
         df[!, :index] = 1:size(df)[1]
         first_idx = combine(groupby(df, :actual_run_times), :index => first)
+        filter!(:actual_run_times => dt -> dt ≤ decision_end_time, first_idx)
         return first_idx[!, :index_first]
     end
 
@@ -197,13 +206,14 @@ function _get_periods_for_simulation(
     (binding_n, horizon_n) = @. Int64(Minute.((binding, horizon)) / interval_length)
     @assert(0 < binding_n ≤ horizon_n, "0 < binding ≤ $horizon (horizon)")
     decision_n = decision_start
-    rt_index_ref = _create_run_time_index_ref(data)
+    rt_index_ref = _create_run_time_index_ref(data, decision_end_time)
     index_ref = findfirst(i -> i == decision_start, rt_index_ref)
     @assert(
         (length(rt_index_ref) - index_ref) % binding_n == 0,
         (
             "An integer number of decision times cannot be run between decision start " *
-            "and end times. Change these, or change the binding time"
+            "and end times. Change these, or change the binding time" *
+            "(($(length(rt_index_ref)) - $index_ref) % $binding_n != 0)"
         )
     )
     n_iterations = length(decision_start_time:binding:decision_end_time)
