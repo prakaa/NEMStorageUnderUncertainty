@@ -278,7 +278,7 @@ function _update_storage_state(
 end
 
 function simulate_storage_operation(
-    optimizer::DataType,
+    optimizer::OptimizerWithAttributes,
     storage::StorageDevice,
     data::ActualData,
     model_formulation::StorageModelFormulation,

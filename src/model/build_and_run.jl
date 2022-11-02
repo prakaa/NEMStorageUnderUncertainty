@@ -68,7 +68,7 @@ The type of model constructed and run is dependent on the `formulation`
   * Throws and error if infeasible/unbounded/etc.
 """
 function run_model(
-    optimizer::DataType,
+    optimizer::OptimizerWithAttributes,
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
