@@ -25,8 +25,7 @@ function _update_storage_state(
         charge_mw = model[:charge_mw][1]
         discharge_mw = model[:discharge_mw][1]
         new_soc₀ =
-            soc_start +
-            charge_mw * storage.η_charge * τ +
+            soc_start + charge_mw * storage.η_charge * τ -
             discharge_mw / storage.η_discharge * τ
         period_throughput_mwh = discharge_mw * τ
     else
