@@ -16,7 +16,7 @@ Build a [`StandardArbitrage`](@ref) model
 
 Built JuMP model
 """
-function build_storage_model(
+function _build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
@@ -70,10 +70,22 @@ function run_model(
     times::Vector{DateTime},
     τ::Float64,
     formulation::StorageModelFormulation;
+    silent::Bool=false,
+    time_limit_sec::Union{Float64,Nothing}=nothing,
+    string_names::Bool=true,
 )
     @debug "Filtering by region, then obtaining times and prices"
     @debug "Building model"
-    model = build_storage_model(storage, prices, times, τ, formulation)
+    model = _build_storage_model(
+        storage,
+        prices,
+        times,
+        τ,
+        formulation;
+        silent=silent,
+        time_limit_sec=time_limit_sec,
+        string_names=string_names,
+    )
     JuMP.set_optimizer(model, optimizer)
     @debug "Begin model solving"
     JuMP.optimize!(model)
