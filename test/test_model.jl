@@ -26,7 +26,7 @@ function test_run_model(
         actual_data, "NSW1", (start_time, end_time)
     )
     model = NEMStorageUnderUncertainty.run_model(
-        HiGHS.Optimizer,
+        optimizer_with_attributes(HiGHS.Optimizer),
         bess,
         actual.prices,
         actual.times,
@@ -46,7 +46,7 @@ end
     interval_model = test_run_model(
         test_data_path, DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
     )
-    @test JuMP.num_constraints(interval_model; count_variable_in_set_constraints=false) == 3
+    @test JuMP.num_constraints(interval_model; count_variable_in_set_constraints=false) == 5
     @test_logs (
         :warn,
         (
