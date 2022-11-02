@@ -1,41 +1,4 @@
 """
-"Updates" (via new `StorageDevice`) storage state between model runs. Specifically:
-
-  * Updates `soc₀` to reflect `soc` at end of last model run
-    * Considers `η_discharge` and `η_charge` (explicitly/via intertemporal SoC constraints)
-  * Updates storage `throughput` based on model run
-    * Based on *discharged (delivered) energy* and thus does not consider any η
-
-# Arguments
-
-  * `storage`: [`StorageDevice`](@ref)
-  * `model`: Model from [`_run_model`](@ref) with solution values
-  * `τ`: Interval duration in hours
-  * `degradation`: No degradation model [`NoDegradation`](@ref)
-
-# Returns
-
-New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
-"""
-function _update_storage_state(
-    storage::StorageDevice, model::JuMP.Model, τ::Float64, ::NoDegradation
-)
-    if length(model[:soc_mwh]) == 1
-        soc_start = model[:soc_mwh][1]
-        charge_mw = model[:charge_mw][1]
-        discharge_mw = model[:discharge_mw][1]
-        new_soc₀ =
-            soc_start + charge_mw * storage.η_charge * τ -
-            discharge_mw / storage.η_discharge * τ
-        period_throughput_mwh = discharge_mw * τ
-    else
-        new_soc₀ = JuMP.value(model[:soc_mwh][end])
-        period_throughput_mwh = sum(@. JuMP.value(model[:discharge_mw] * τ))
-    end
-    return copy(storage, new_soc₀, period_throughput_mwh)
-end
-
-"""
 Gets decision points, binding intervals and horizon ends given [`ActualData`](@ref) and
 simulation parameters.
 
@@ -256,13 +219,68 @@ function _get_periods_for_simulation(
     return period_data
 end
 
+function _retrieve_results(m::JuMP.Model, binding_start::DateTime, binding_end::DateTime)
+    vars = (:charge_mw, :discharge_mw, :soc_mwh, :charge_state)
+    var_solns = Vector{DataFrame}(undef, length(vars))
+    for (i, var) in enumerate(vars)
+        table = JuMP.Containers.rowtable(JuMP.value.(m[var]); header=[:time, var])
+        var_solns[i] = DataFrame(table)
+    end
+    results = innerjoin(var_solns...; on=:time)
+    binding = results[binding_start .≤ results.time .≤ binding_end, :]
+    return results, binding
+end
+
+"""
+"Updates" (via new `StorageDevice`) storage state between model runs. Specifically:
+
+  * Updates `soc₀` to reflect `soc` at end of last model run
+    * Considers `η_discharge` and `η_charge` (explicitly/via intertemporal SoC constraints)
+  * Updates storage `throughput` based on model run
+    * Based on *discharged (delivered) energy* and thus does not consider any η
+
+# Arguments
+
+  * `storage`: [`StorageDevice`](@ref)
+  * `model`: Model from [`_run_model`](@ref) with solution values
+  * `τ`: Interval duration in hours
+  * `degradation`: No degradation model [`NoDegradation`](@ref)
+
+# Returns
+
+New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
+"""
+function _update_storage_state(
+    storage::StorageDevice, binding_results::DataFrame, τ::Float64, ::NoDegradation
+)
+    if size(binding_results)[1] == 1
+        soc_start = binding_results[1, :soc_mwh]
+        charge_mw = binding_results[1, :charge_mw]
+        discharge_mw = binding_results[1, :discharge_mw]
+        new_soc₀ =
+            soc_start + charge_mw * storage.η_charge * τ -
+            discharge_mw / storage.η_discharge * τ
+        period_throughput_mwh = discharge_mw * τ
+    else
+        new_soc₀ = binding_results[end, :soc_mwh]
+        period_throughput_mwh = sum(binding_results[:, :discharge_mw] * τ)
+    end
+    return copy(storage, new_soc₀, period_throughput_mwh)
+end
+
 function simulate_storage_operation(
     optimizer::DataType,
     storage::StorageDevice,
     data::ActualData,
-    region::String,
     model_formulation::StorageModelFormulation,
     degradation::DegradationModel;
+    decision_start_time::DateTime,
+    decision_end_time::DateTime,
     binding::T,
     horizon::T,
-) where {T<:Period} end
+) where {T<:Period}
+    times = data.times
+    return sim_periods = _get_periods_for_simulation(
+        decision_start_time, decision_end_time, binding, horizon, data
+    )
+end
