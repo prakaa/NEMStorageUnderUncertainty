@@ -2,7 +2,7 @@
 
 julia_version = "1.8.2"
 manifest_format = "2.0"
-project_hash = "5f294480c8358c315d11f35af1827ff996778559"
+project_hash = "80bb72141fd9571192fb4aafada357fe697c7213"
 
 [[deps.ASL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1103,12 +1103,6 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jl
 git-tree-sha1 = "84a314e3926ba9ec66ac097e3635e270986b0f10"
 uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
 version = "1.50.9+0"
-
-[[deps.ParameterJuMP]]
-deps = ["JuMP", "MathOptInterface", "MutableArithmetics", "SparseArrays"]
-git-tree-sha1 = "a7ea1d5263f9a3aa0670fbcc58c2cca275baa3fc"
-uuid = "774612a8-9878-5177-865a-ca53ae2495f9"
-version = "0.4.1"
 
 [[deps.Parquet]]
 deps = ["CategoricalArrays", "CodecZlib", "CodecZstd", "DataAPI", "Dates", "Decimals", "LittleEndianBase128", "Missings", "Mmap", "SentinelArrays", "Snappy", "Tables", "Thrift"]
