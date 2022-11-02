@@ -231,7 +231,9 @@ function _retrieve_results(
     results = innerjoin(var_solns...; on=:simulated_time)
     results[:, :decision_time] .= decision_time
     binding = results[binding_start .≤ results.simulated_time .≤ binding_end, :]
+    binding[:, :status] .= "binding"
     non_binding = results[binding_end .< results.simulated_time, :]
+    non_binding[:, :status] .= "non binding"
     return non_binding, binding
 end
 
@@ -345,9 +347,7 @@ function simulate_storage_operation(
     end
     if capture_all_decisions
         non_binding_df = vcat(non_binding_results...)
-        non_binding_df[:, :status] .= "non binding"
         binding_df = vcat(binding_results...)
-        binding_df[:, :status] .= "binding"
         results_df = sort!(vcat(binding_df, non_binding_df), :decision_time)
     else
         results_df = vcat(binding_results...)
