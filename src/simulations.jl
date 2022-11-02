@@ -219,16 +219,20 @@ function _get_periods_for_simulation(
     return period_data
 end
 
-function _retrieve_results(m::JuMP.Model, binding_start::DateTime, binding_end::DateTime)
+function _retrieve_results(
+    m::JuMP.Model, decision_time::DateTime, binding_start::DateTime, binding_end::DateTime
+)
     vars = (:charge_mw, :discharge_mw, :soc_mwh, :charge_state)
     var_solns = Vector{DataFrame}(undef, length(vars))
     for (i, var) in enumerate(vars)
-        table = JuMP.Containers.rowtable(JuMP.value.(m[var]); header=[:time, var])
+        table = JuMP.Containers.rowtable(JuMP.value.(m[var]); header=[:simulated_time, var])
         var_solns[i] = DataFrame(table)
     end
-    results = innerjoin(var_solns...; on=:time)
+    results = innerjoin(var_solns...; on=:simulated_time)
+    results[:, :decision_time] .= decision_time
     binding = results[binding_start .≤ results.time .≤ binding_end, :]
-    return results, binding
+    non_binding = results[binding_end .< results.time, :]
+    return non_binding, binding
 end
 
 """
@@ -278,9 +282,67 @@ function simulate_storage_operation(
     decision_end_time::DateTime,
     binding::T,
     horizon::T,
+    capture_all_decisions::Bool=false,
+    silent::Bool=false,
+    time_limit_sec::Union{Float64,Nothing}=nothing,
+    string_names::Bool=true,
 ) where {T<:Period}
-    times = data.times
-    return sim_periods = _get_periods_for_simulation(
+    @assert(
+        decision_start_time ≤ decision_end_time, "Decision start time ≤ decision end time"
+    )
+    if silent
+        disable_logging(Logging.Info)
+    end
+    (times, prices) = (data.times, data.prices)
+    sim_periods = _get_periods_for_simulation(
         decision_start_time, decision_end_time, binding, horizon, data
     )
+    @info("""
+        Running simulation with $model_formulation and $degradation:
+            decision_start_time: $decision_start_time
+            decision_end_time: $decision_end_time
+            binding: $binding
+            horizon: $horizon
+            """)
+    binding_results = Vector{DataFrame}(undef, size(sim_periods)[1])
+    if capture_all_decisions
+        non_binding_results = Vector{DataFrame}(undef, size(sim_periods[1]))
+    end
+    @showprogress 1 "Simulating..." for (i, sim_period) in enumerate(eachrow(sim_periods))
+        sim_indices = sim_period[:binding_start]:1:sim_period[:horizon_end]
+        decision_time = times[sim_period[:descision_interval]]
+        binding_start_time = sim_indices[1]
+        binding_end_time = times[sim_period[:binding_end]]
+        simulate_times = times[sim_indices]
+        simulate_prices = prices[sim_indices]
+        m = run_model(
+            optimizer,
+            storage,
+            simulate_prices,
+            simulate_times,
+            data.τ,
+            model_formulation;
+            silent=silent,
+            time_limit_sec=time_limit_sec,
+            string_nam=string_names,
+        )
+        non_binding_result, binding_result = _retrieve_results(
+            m, decision_time, binding_start_time, binding_end_time
+        )
+        binding_results[i] = binding_result
+        if capture_all_decisions
+            non_binding_results[i] = non_binding_result
+        end
+        storage = _update_storage_state(storage, binding_results, data.τ, degradation)
+    end
+    if capture_all_decisions
+        non_binding_df = vcat(non_binding_results...)
+        non_binding_df[:, :status] .= "non binding"
+        binding_df = vcat(binding_results...)
+        binding_df[:, :status] .= "binding"
+        results_df = sort!(vcat(binding_df, non_binding_df), :decision_time)
+    else
+        results_df = vcat(binding_results...)
+    end
+    return results_df
 end
