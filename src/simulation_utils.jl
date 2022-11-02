@@ -5,27 +5,3 @@ function make_ActualData(
     actual = NEMStorageUnderUncertainty.get_ActualData(all_actual_data, region, time_window)
     return actual
 end
-
-function simulate_standard_arbitrage_with_actual_data(
-    optimizer::OptimizerWithAttributes,
-    storage::NEMStorageUnderUncertainty.StorageDevice,
-    data::NEMStorageUnderUncertainty.ActualData,
-    decision_start_time::DateTime,
-    decision_end_time::DateTime,
-    binding::T,
-    horizon::T,
-) where {T<:Period}
-    results = NEMStorageUnderUncertainty.simulate_storage_operation(
-        optimizer,
-        storage,
-        data,
-        NEMStorageUnderUncertainty.StandardArbitrage(),
-        NEMStorageUnderUncertainty.NoDegradation();
-        decision_start_time=decision_start_time,
-        decision_end_time=decision_end_time,
-        binding=binding,
-        horizon=horizon,
-        silent=true,
-    )
-    return results
-end
