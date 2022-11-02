@@ -290,7 +290,7 @@ function simulate_storage_operation(
     binding::T,
     horizon::T,
     capture_all_decisions::Bool=false,
-    silent::Bool=false,
+    silent::Bool=true,
     show_progress::Bool=true,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
