@@ -314,7 +314,7 @@ function simulate_storage_operation(
             """)
     binding_results = Vector{DataFrame}(undef, size(sim_periods)[1])
     if capture_all_decisions
-        non_binding_results = Vector{DataFrame}(undef, size(sim_periods[1]))
+        non_binding_results = Vector{DataFrame}(undef, size(sim_periods)[1])
     end
     p = Progress(size(sim_periods)[1]; enabled=show_progress)
     for (i, sim_period) in enumerate(eachrow(sim_periods))
