@@ -152,10 +152,32 @@ using Test
     end
 end
 
+function test_common_expected_results(
+    results::DataFrame,
+    binding::Period,
+    lookahead::Period,
+    decision_start_time::DateTime,
+    decision_end_time::DateTime;
+    capture_all_decisions::Bool=false,
+)
+    @test results[1, :simulated_time] == decision_start_time + Minute(5)
+    if capture_all_decisions
+        @test results[end, :simulated_time] == decision_end_time + lookahead
+    else
+        @test results[end, :simulated_time] == decision_end_time + binding
+    end
+    @test unique(results.lookahead_minutes)[] == Dates.value(lookahead)
+    @test unique(results.REGIONID)[] == "NSW1"
+    return nothing
+end
+
 @testset "Run Actual Data Simulation Tests" begin
     test_data_path = joinpath(@__DIR__, "test_data")
-    actual_data = NEMStorageUnderUncertainty.make_ActualData(
-        joinpath(test_data_path, "dispatch_price"), "NSW1", nothing
+    all_actual_data = NEMStorageUnderUncertainty.get_all_actual_data(
+        joinpath(test_data_path, "dispatch_price")
+    )
+    actual_data = NEMStorageUnderUncertainty.get_ActualData(
+        all_actual_data, "NSW1", nothing
     )
     storage = NEMStorageUnderUncertainty.BESS(;
         power_capacity=30.0,
@@ -167,7 +189,8 @@ end
         soc₀=0.5 * 30.0,
         throughput=0.0,
     )
-    binding = Minute(5)
+    decision_start_time = DateTime(2021, 12, 1, 12, 0, 0)
+    decision_end_time = DateTime(2021, 12, 2, 12, 00, 0)
     @testset "Test single period" begin
         results = NEMStorageUnderUncertainty.simulate_storage_operation(
             optimizer_with_attributes(HiGHS.Optimizer),
@@ -175,15 +198,15 @@ end
             actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
-            decision_start_time=DateTime(2021, 12, 1, 12, 0, 0),
-            decision_end_time=DateTime(2021, 12, 2, 12, 0, 0),
-            binding=binding,
+            decision_start_time=decision_start_time,
+            decision_end_time=decision_end_time,
+            binding=Minute(5),
             horizon=Minute(5),
         )
-        @test results[1, :simulated_time] == DateTime(2021, 12, 1, 12, 0, 0) + binding
-        @test results[end, :simulated_time] == DateTime(2021, 12, 2, 12, 0, 0) + binding
+        test_common_expected_results(
+            results, Minute(5), Minute(5), decision_start_time, decision_end_time
+        )
         @test unique(results.status)[] == "binding"
-        @test unique(results.lookahead_minutes)[] == Dates.value(Minute(5))
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -206,16 +229,21 @@ end
             actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
-            decision_start_time=DateTime(2021, 12, 1, 12, 0, 0),
-            decision_end_time=DateTime(2021, 12, 2, 12, 0, 0),
-            binding=binding,
+            decision_start_time=decision_start_time + Minute(20),
+            decision_end_time=decision_end_time + Minute(20),
+            binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
         )
-        @test results[1, :simulated_time] == DateTime(2021, 12, 1, 12, 0, 0) + binding
-        @test results[end, :simulated_time] == DateTime(2021, 12, 2, 12, 0, 0) + Minute(10)
+        test_common_expected_results(
+            results,
+            Minute(5),
+            Minute(10),
+            decision_start_time + Minute(20),
+            decision_end_time + Minute(20);
+            capture_all_decisions=true,
+        )
         @test unique(results.status) == Vector(["binding", "non binding"])
-        @test unique(results.lookahead_minutes)[] == Dates.value(Minute(10))
         @testset "Testing update storage state" begin
             filter!(:status => x -> x == "binding", results)
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
@@ -239,14 +267,18 @@ end
             actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
-            decision_start_time=DateTime(2021, 12, 1, 12, 0, 0),
-            decision_end_time=DateTime(2021, 12, 2, 12, 0, 0),
+            decision_start_time=decision_start_time + Minute(10),
+            decision_end_time=decision_end_time - Minute(5),
             binding=Minute(15),
             horizon=Minute(30),
         )
-        @test results[1, :simulated_time] == DateTime(2021, 12, 1, 12, 0, 0) + Minute(5)
-        @test results[end, :simulated_time] == DateTime(2021, 12, 2, 12, 0, 0) + Minute(15)
-        @test unique(results.lookahead_minutes)[] == Dates.value(Minute(30))
+        test_common_expected_results(
+            results,
+            Minute(15),
+            Minute(30),
+            decision_start_time + Minute(10),
+            decision_end_time - Minute(5),
+        )
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
