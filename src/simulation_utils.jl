@@ -43,8 +43,8 @@ function run_perfect_foresight(
         time_limit_sec=time_limit_sec,
         string_names=string_names,
     )
-    results = _retrieve_results(
+    (_, binding_results) = _retrieve_results(
         model, actual_data.times[1], actual_data.times[2], actual_data.times[end]
     )
-    return results
+    return binding_results
 end
