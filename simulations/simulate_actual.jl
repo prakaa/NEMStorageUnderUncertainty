@@ -57,7 +57,7 @@ function simulate_actual(
         binding=binding,
         horizon=horizon,
         silent=true,
-        show_progress=true,
+        show_progress=false,
     )
     return results
 end
