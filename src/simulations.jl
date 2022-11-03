@@ -259,8 +259,8 @@ function _update_storage_state(
     storage::StorageDevice, binding_results::DataFrame, τ::Float64, ::NoDegradation
 )
     new_soc₀ = binding_results[end, :soc_mwh]
-    period_throughput_mwh = sum(binding_results[:, :discharge_mw] * τ)
-    return copy(storage, new_soc₀, period_throughput_mwh)
+    new_throughput = storage.throughput + sum(binding_results[:, :discharge_mw] * τ)
+    return copy(storage, new_soc₀, new_throughput)
 end
 
 function simulate_storage_operation(
