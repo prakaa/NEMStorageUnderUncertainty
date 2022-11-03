@@ -240,8 +240,9 @@ end
 """
 "Updates" (via new `StorageDevice`) storage state between model runs. Specifically:
 
-  * Updates `soc₀` to reflect `soc` at end of last model run
+  * Updates `soc₀` to reflect `soc` at end of binding decisions from last model run
   * Updates storage `throughput` based on model run
+    * `throughput` is defined as discharged energy, and hence does not consider η_discharge
 
 # Arguments
 
@@ -325,9 +326,7 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        storage = _update_storage_state(
-            storage, binding_result, data.τ, degradation
-        )
+        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
         next!(p)
     end
     if capture_all_decisions
@@ -338,5 +337,6 @@ function simulate_storage_operation(
         results_df = vcat(binding_results...)
     end
     results_df[:, :lookahead_minutes] .= Dates.value(Minute(horizon))
+    results_df[:, :REGIONID] .= data.region
     return results_df
 end
