@@ -279,6 +279,8 @@ end
             decision_start_time + Minute(10),
             decision_end_time - Minute(5),
         )
+        unique_decision_times = unique(results.decision_time)
+        @test unique(diff(unique_decision_times))[] == Minute(15)
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -415,6 +417,8 @@ end
             decision_start_time + Minute(10),
             decision_end_time - Minute(5),
         )
+        unique_decision_times = unique(results.decision_time)
+        @test unique(diff(unique_decision_times))[] == Minute(15)
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
