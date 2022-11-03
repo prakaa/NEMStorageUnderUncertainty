@@ -55,3 +55,23 @@ Adds binary variable that indicates charging (i.e. ``u_t=1``) when charging.
 function _add_variable_charge_state!(model::JuMP.Model, times::Vector{DateTime})
     JuMP.@variable(model, charge_state[times], binary = true)
 end
+
+@doc raw"""
+Adds variable that tracks throughput in MWh (``d_t``).
+
+
+The following variable bound is applied: ``d_0 \leq d_t``, where
+the limit represents the initial throughput obtained from `storage`.
+
+# Arguments
+
+  * `model`: JuMP model
+  * `storage`: A [`StorageDevice`](@ref)
+  * `times`: A `Vector` of `DateTime`s
+"""
+function _add_variable_throughput!(
+    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}
+)
+    throughput₀ = storage.throughput
+    JuMP.@variable(model, throughput_mwh[times] ≥ throughput₀)
+end

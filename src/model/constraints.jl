@@ -97,3 +97,83 @@ function _add_constraint_intertemporal_soc!(
         )
     )
 end
+
+@doc raw"""
+Adds the following constraint to `model`:
+
+``d_1 - d_0 - p_1\tau = 0``
+
+where ``d_0`` is obtained from `storage`.
+
+# Arguments
+
+  * `model`: JuMP model
+  * `storage`: A [`StorageDevice`](@ref)
+  * `times`: A `Vector` of `DateTime`s
+  * `tau`: Interval length in hours
+"""
+function _add_constraint_initial_throughput!(
+    model::JuMP.Model, storage::StorageDevice, times::Vector{DateTime}, τ::Float64
+)
+    discharge_mw = model[:discharge_mw]
+    throughput_mwh = model[:throughput_mwh]
+    throughput₀ = storage.throughput
+    JuMP.@constraint(
+        model,
+        initial_throughput,
+        throughput_mwh[times[1]] - throughput₀ # change in throughput
+        - discharge_mw[times[1]] * τ # discharge in MWh
+        == 0
+    )
+end
+
+@doc raw"""
+Adds the following constraint to `model` if `times` has length ≥ 2:
+
+``d_t-d_{t-1} - p_t\tau = 0``
+
+# Arguments
+
+  * `model`: JuMP model
+  * `times`: A `Vector` of `DateTime`s
+  * `tau`: Interval length in hours
+"""
+function _add_constraint_intertemporal_throughput!(
+    model::JuMP.Model, times::Vector{DateTime}, τ::Float64
+)
+    @assert(length(times) ≥ 2, "Constraint invalid for single period models")
+    discharge_mw = model[:discharge_mw]
+    throughput_mwh = model[:throughput_mwh]
+    JuMP.@constraint(
+        model,
+        intertemporal_throughput[t=times[2:end]],
+        (
+            throughput_mwh[times[_get_times_index(t, times)]] # throughput at time t
+            -
+            throughput_mwh[times[_get_times_index(t, times) - 1]] # throughput at time t-1
+            -
+            discharge_mw[times[_get_times_index(t, times)]] * τ # calculate discharge
+            == 0
+        )
+    )
+end
+
+@doc raw"""
+Adds the following constraint to `model`:
+
+``d_{end} ≤ d_{max}``
+
+where ``d_{max}`` is supplied
+
+# Arguments
+
+  * `model`: JuMP model
+  * `times`: A `Vector` of `DateTime`s
+  * `d_max`: Throughput limit in MWh, applicable at the end of `times`
+"""
+function _add_constraint_throughput_limit!(
+    model::JuMP.Model, times::Vector{DateTime}, d_max::Float64
+)
+    throughput_mwh = model[:throughput_mwh]
+    JuMP.@constraint(model, throughput_limit, throughput_mwh[times[end]] ≤ d_max)
+end
