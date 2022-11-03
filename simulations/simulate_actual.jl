@@ -38,7 +38,6 @@ function collate_actual_data(region::String)
 end
 
 function simulate_actual(
-    optimizer::OptimizerWithAttributes,
     storage::NEMStorageUnderUncertainty.StorageDevice,
     data::NEMStorageUnderUncertainty.ActualData,
     binding::T,
@@ -46,6 +45,7 @@ function simulate_actual(
     start_time::DateTime,
     end_time::DateTime,
 ) where {T<:Period}
+    optimizer = set_optimizer("Gurobi")
     results = NEMStorageUnderUncertainty.simulate_storage_operation(
         optimizer,
         storage,
@@ -57,13 +57,13 @@ function simulate_actual(
         binding=binding,
         horizon=horizon,
         silent=true,
-        show_progress=false,
+        show_progress=true,
     )
     return results
 end
 
 function main()
-    optimizer = set_optimizer("HiGHS")
+    optimizer = set_optimizer("Gurobi")
     storage = NEMStorageUnderUncertainty.BESS(;
         power_capacity=30.0,
         energy_capacity=30.0,
@@ -98,7 +98,6 @@ function main()
     Threads.@threads for horizon in lookaheads
         @info("Starting lookahead $horizon simulation")
         results = simulate_actual(
-            optimizer,
             storage,
             actual_data,
             Minute(5),
@@ -110,14 +109,13 @@ function main()
         @info("Completed lookahead $horizon simulation")
     end
     df = vcat(all_results..., perfect_foresight_result)
+    df = NEMStorageUnderUncertainty.calculate_actual_revenue!(df, all_actual_data)
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
     CSV.write(
         joinpath(@__DIR__, "results", "actual_StandardArb_NoDeg_2021_lookaheads.csv"), df
     )
-    df = NEMStorageUnderUncertainty.calculate_actual_revenue!(df, all_actual_data)
-
     return df
 end
 
