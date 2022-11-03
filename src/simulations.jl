@@ -290,7 +290,7 @@ function simulate_storage_operation(
         decision_start_time, decision_end_time, binding, horizon, data
     )
     @info("""
-        Running simulation with $model_formulation and $degradation:
+        Running actual data simulation with $model_formulation and $degradation:
             decision_start_time: $decision_start_time
             decision_end_time: $decision_end_time
             binding: $binding
@@ -307,6 +307,86 @@ function simulate_storage_operation(
         binding_start_time = times[sim_indices[1]]
         binding_end_time = times[sim_period[:binding_end]]
         simulate_times = times[sim_indices]
+        simulate_prices = prices[sim_indices]
+        m = run_model(
+            optimizer,
+            storage,
+            simulate_prices,
+            simulate_times,
+            data.τ,
+            model_formulation;
+            silent=silent,
+            time_limit_sec=time_limit_sec,
+            string_names=string_names,
+        )
+        non_binding_result, binding_result = _retrieve_results(
+            m, decision_time, binding_start_time, binding_end_time
+        )
+        binding_results[i] = binding_result
+        if capture_all_decisions
+            non_binding_results[i] = non_binding_result
+        end
+        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
+        next!(p)
+    end
+    if capture_all_decisions
+        non_binding_df = vcat(non_binding_results...)
+        binding_df = vcat(binding_results...)
+        results_df = sort!(vcat(binding_df, non_binding_df), :decision_time)
+    else
+        results_df = vcat(binding_results...)
+    end
+    results_df[:, :lookahead_minutes] .= Dates.value(Minute(horizon))
+    results_df[:, :REGIONID] .= data.region
+    return results_df
+end
+
+function simulate_storage_operation(
+    optimizer::OptimizerWithAttributes,
+    storage::StorageDevice,
+    data::ForecastData,
+    model_formulation::StorageModelFormulation,
+    degradation::DegradationModel;
+    decision_start_time::DateTime,
+    decision_end_time::DateTime,
+    binding::T,
+    horizon::T,
+    capture_all_decisions::Bool=false,
+    silent::Bool=true,
+    show_progress::Bool=true,
+    time_limit_sec::Union{Float64,Nothing}=nothing,
+    string_names::Bool=true,
+) where {T<:Period}
+    @assert(
+        decision_start_time ≤ decision_end_time, "Decision start time ≤ decision end time"
+    )
+    if silent
+        disable_logging(Logging.Info)
+    end
+    (run_times, forecasted_times, prices) = (
+        data.run_times, data.forecasted_times, data.prices
+    )
+    sim_periods = _get_periods_for_simulation(
+        decision_start_time, decision_end_time, binding, horizon, data
+    )
+    @info("""
+        Running forecast data simulation with $model_formulation and $degradation:
+            decision_start_time: $decision_start_time
+            decision_end_time: $decision_end_time
+            binding: $binding
+            horizon: $horizon
+            """)
+    binding_results = Vector{DataFrame}(undef, size(sim_periods)[1])
+    if capture_all_decisions
+        non_binding_results = Vector{DataFrame}(undef, size(sim_periods)[1])
+    end
+    p = Progress(size(sim_periods)[1]; enabled=show_progress)
+    for (i, sim_period) in enumerate(eachrow(sim_periods))
+        sim_indices = sim_period[:binding_start]:1:sim_period[:horizon_end]
+        decision_time = run_times[sim_period[:decision_interval]]
+        binding_start_time = forecasted_times[sim_indices[1]]
+        binding_end_time = forecasted_times[sim_period[:binding_end]]
+        simulate_times = forecasted_times[sim_indices]
         simulate_prices = prices[sim_indices]
         m = run_model(
             optimizer,

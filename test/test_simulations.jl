@@ -295,3 +295,141 @@ end
         end
     end
 end
+
+@testset "Run Forecasted Data Simulation Tests" begin
+    test_data_path = joinpath(@__DIR__, "test_data", "forecast_price")
+    pd_path = joinpath(test_data_path, "PREDISPATCH")
+    p5_path = joinpath(test_data_path, "P5MIN")
+    (pd_df, p5_df) = NEMStorageUnderUncertainty.get_all_pd_and_p5_data(pd_path, p5_path)
+    unaligned_forecast_data = NEMStorageUnderUncertainty.get_ForecastData(
+        pd_df, p5_df, "NSW1", nothing, nothing
+    )
+    aligned_forecast_data = NEMStorageUnderUncertainty.get_ForecastData(
+        pd_df,
+        p5_df,
+        "NSW1",
+        (DateTime(2021, 1, 1, 4, 30, 0), DateTime(2021, 1, 2, 4, 30, 0)),
+        nothing,
+    )
+    storage = NEMStorageUnderUncertainty.BESS(;
+        power_capacity=30.0,
+        energy_capacity=30.0,
+        soc_min=0.1 * 30.0,
+        soc_max=0.9 * 30.0,
+        η_charge=0.95,
+        η_discharge=0.95,
+        soc₀=0.5 * 30.0,
+        throughput=0.0,
+    )
+    decision_start_time = DateTime(2021, 1, 1, 12, 0, 0)
+    decision_end_time = DateTime(2021, 1, 2, 2, 00, 0)
+    @testset "Test single period" begin
+        results = NEMStorageUnderUncertainty.simulate_storage_operation(
+            optimizer_with_attributes(HiGHS.Optimizer),
+            storage,
+            aligned_forecast_data,
+            NEMStorageUnderUncertainty.StandardArbitrage(),
+            NEMStorageUnderUncertainty.NoDegradation();
+            decision_start_time=decision_start_time,
+            decision_end_time=decision_end_time,
+            binding=Minute(5),
+            horizon=Minute(5),
+        )
+        test_common_expected_results(
+            results, Minute(5), Minute(5), decision_start_time, decision_end_time
+        )
+        @test unique(results.status)[] == "binding"
+        @testset "Testing update storage state" begin
+            charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
+            discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
+            for test_index in (charge_test_index, discharge_test_index)
+                soc_next = results[test_index + 1, :soc_mwh]
+                calc_soc = (
+                    results[test_index, :soc_mwh] +
+                    results[test_index + 1, :charge_mw] *
+                    storage.η_charge *
+                    aligned_forecast_data.τ -
+                    results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                    aligned_forecast_data.τ
+                )
+                @test isapprox(calc_soc, soc_next, atol=0.1)
+            end
+        end
+    end
+    @testset "Test multi period" begin
+        results = NEMStorageUnderUncertainty.simulate_storage_operation(
+            optimizer_with_attributes(HiGHS.Optimizer),
+            storage,
+            aligned_forecast_data,
+            NEMStorageUnderUncertainty.StandardArbitrage(),
+            NEMStorageUnderUncertainty.NoDegradation();
+            decision_start_time=decision_start_time + Minute(20),
+            decision_end_time=decision_end_time + Minute(20),
+            binding=Minute(5),
+            horizon=Minute(10),
+            capture_all_decisions=true,
+        )
+        test_common_expected_results(
+            results,
+            Minute(5),
+            Minute(10),
+            decision_start_time + Minute(20),
+            decision_end_time + Minute(20);
+            capture_all_decisions=true,
+        )
+        @test unique(results.status) == Vector(["binding", "non binding"])
+        @testset "Testing update storage state" begin
+            filter!(:status => x -> x == "binding", results)
+            charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
+            discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
+            for test_index in (charge_test_index, discharge_test_index)
+                soc_next = results[test_index + 1, :soc_mwh]
+                calc_soc = (
+                    results[test_index, :soc_mwh] +
+                    results[test_index + 1, :charge_mw] *
+                    storage.η_charge *
+                    aligned_forecast_data.τ -
+                    results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                    aligned_forecast_data.τ
+                )
+                @test isapprox(calc_soc, soc_next, atol=0.01)
+            end
+        end
+    end
+    @testset "Test multi binding, multi period" begin
+        results = NEMStorageUnderUncertainty.simulate_storage_operation(
+            optimizer_with_attributes(HiGHS.Optimizer),
+            storage,
+            aligned_forecast_data,
+            NEMStorageUnderUncertainty.StandardArbitrage(),
+            NEMStorageUnderUncertainty.NoDegradation();
+            decision_start_time=decision_start_time + Minute(10),
+            decision_end_time=decision_end_time - Minute(5),
+            binding=Minute(15),
+            horizon=Minute(30),
+        )
+        test_common_expected_results(
+            results,
+            Minute(15),
+            Minute(30),
+            decision_start_time + Minute(10),
+            decision_end_time - Minute(5),
+        )
+        @testset "Testing update storage state" begin
+            charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
+            discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
+            for test_index in (charge_test_index, discharge_test_index)
+                soc_next = results[test_index + 1, :soc_mwh]
+                calc_soc = (
+                    results[test_index, :soc_mwh] +
+                    results[test_index + 1, :charge_mw] *
+                    storage.η_charge *
+                    aligned_forecast_data.τ -
+                    results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                    aligned_forecast_data.τ
+                )
+                @test isapprox(calc_soc, soc_next, atol=0.01)
+            end
+        end
+    end
+end
