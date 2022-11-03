@@ -46,5 +46,9 @@ function run_perfect_foresight(
     (_, binding_results) = _retrieve_results(
         model, actual_data.times[1], actual_data.times[2], actual_data.times[end]
     )
+    binding_results[:, :REGIONID] .= actual_data.region
+    binding_results[:, :lookahead_minutes] .= Minute(
+        actual_data.times[end] - actual_data.times[1]
+    )
     return binding_results
 end
