@@ -110,7 +110,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
         all_results = DataFrame[]
         for horizon in lookaheads
             @info("Starting lookahead $horizon simulation")
-            results = simulate_actual(
+            results = simulate(
                 storage,
                 actual_data,
                 Minute(5),
