@@ -222,7 +222,7 @@ end
 function _retrieve_results(
     m::JuMP.Model, decision_time::DateTime, binding_start::DateTime, binding_end::DateTime
 )
-    vars = (:charge_mw, :discharge_mw, :soc_mwh, :charge_state)
+    vars = (:charge_mw, :discharge_mw, :soc_mwh, :throughput_mwh, :charge_state)
     var_solns = Vector{DataFrame}(undef, length(vars))
     for (i, var) in enumerate(vars)
         table = JuMP.Containers.rowtable(JuMP.value.(m[var]); header=[:simulated_time, var])
@@ -256,10 +256,10 @@ end
 New [`StorageDevice`](@ref) with updated `soc₀` and `throughput`
 """
 function _update_storage_state(
-    storage::StorageDevice, binding_results::DataFrame, τ::Float64, ::NoDegradation
+    storage::StorageDevice, binding_results::DataFrame, ::NoDegradation
 )
     new_soc₀ = binding_results[end, :soc_mwh]
-    new_throughput = storage.throughput + sum(binding_results[:, :discharge_mw] * τ)
+    new_throughput = binding_results[end, :throughput_mwh]
     return copy(storage, new_soc₀, new_throughput)
 end
 
@@ -327,7 +327,7 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
+        storage = _update_storage_state(storage, binding_result, degradation)
         next!(p)
     end
     if capture_all_decisions
@@ -408,7 +408,7 @@ function simulate_storage_operation(
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
         end
-        storage = _update_storage_state(storage, binding_result, data.τ, degradation)
+        storage = _update_storage_state(storage, binding_result, degradation)
         next!(p)
     end
     if capture_all_decisions

@@ -217,7 +217,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   actual_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
             for test_index in (charge_test_index, discharge_test_index)
@@ -230,6 +230,23 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.1)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * actual_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] * storage.η_charge * actual_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                actual_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
     @testset "Test multi period" begin
@@ -264,7 +281,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   actual_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             filter!(:status => x -> x == "binding", results)
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -278,6 +295,23 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.01)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * actual_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] * storage.η_charge * actual_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                actual_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
     @testset "Test multi binding, multi period" begin
@@ -311,7 +345,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   actual_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
             for test_index in (charge_test_index, discharge_test_index)
@@ -324,6 +358,23 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.01)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * actual_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] * storage.η_charge * actual_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                actual_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
 end
@@ -384,7 +435,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   aligned_forecast_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
             for test_index in (charge_test_index, discharge_test_index)
@@ -399,6 +450,25 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.1)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] *
+                storage.η_charge *
+                aligned_forecast_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                aligned_forecast_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
     @testset "Test multi period" begin
@@ -433,7 +503,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   aligned_forecast_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             filter!(:status => x -> x == "binding", results)
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -449,6 +519,25 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.01)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] *
+                storage.η_charge *
+                aligned_forecast_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                aligned_forecast_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
     @testset "Test multi binding, multi period" begin
@@ -482,7 +571,7 @@ end
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   aligned_forecast_data.τ
         end
-        @testset "Testing update storage state" begin
+        @testset "Testing SoC evolution" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
             for test_index in (charge_test_index, discharge_test_index)
@@ -497,6 +586,25 @@ end
                 )
                 @test isapprox(calc_soc, soc_next, atol=0.01)
             end
+        end
+        @testset "Test intersim updates" begin
+            test_indices = findall(
+                x -> x > Millisecond(0),
+                results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
+            )
+            test_index = rand(test_indices)
+            @test results[test_index + 1, :throughput_mwh] ==
+                results[test_index, :throughput_mwh] +
+                  results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ
+            calc_soc = (
+                results[test_index, :soc_mwh] +
+                results[test_index + 1, :charge_mw] *
+                storage.η_charge *
+                aligned_forecast_data.τ -
+                results[test_index + 1, :discharge_mw] / storage.η_discharge *
+                aligned_forecast_data.τ
+            )
+            @test isapprox(calc_soc, results[test_index + 1, :soc_mwh], atol=0.1)
         end
     end
 end
