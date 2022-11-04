@@ -27,7 +27,8 @@ function run_perfect_foresight(
     optimizer::OptimizerWithAttributes,
     storage::StorageDevice,
     actual_data::ActualData,
-    formulation::StorageModelFormulation;
+    formulation::StorageModelFormulation,
+    degradation::DegradationModel;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
@@ -38,7 +39,8 @@ function run_perfect_foresight(
         actual_data.prices,
         actual_data.times,
         actual_data.τ,
-        formulation;
+        formulation,
+        degradation;
         silent=silent,
         time_limit_sec=time_limit_sec,
         string_names=string_names,

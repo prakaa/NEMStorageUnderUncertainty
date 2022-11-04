@@ -523,7 +523,8 @@ end
         optimizer_with_attributes(HiGHS.Optimizer),
         storage,
         actual_data,
-        NEMStorageUnderUncertainty.StandardArbitrage();
+        NEMStorageUnderUncertainty.StandardArbitrage(),
+        NEMStorageUnderUncertainty.NoDegradation();
         silent=true,
     )
     @test unique(results.lookahead_minutes)[] ==

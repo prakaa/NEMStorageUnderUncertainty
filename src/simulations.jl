@@ -314,7 +314,8 @@ function simulate_storage_operation(
             simulate_prices,
             simulate_times,
             data.τ,
-            model_formulation;
+            model_formulation,
+            degradation;
             silent=silent,
             time_limit_sec=time_limit_sec,
             string_names=string_names,
@@ -394,7 +395,8 @@ function simulate_storage_operation(
             simulate_prices,
             simulate_times,
             data.τ,
-            model_formulation;
+            model_formulation,
+            degradation;
             silent=silent,
             time_limit_sec=time_limit_sec,
             string_names=string_names,

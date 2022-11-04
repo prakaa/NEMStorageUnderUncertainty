@@ -25,7 +25,8 @@ function _build_storage_model(
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
     τ::Float64,
-    ::StandardArbitrage;
+    ::StandardArbitrage,
+    ::NoDegradation;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
@@ -75,7 +76,8 @@ function run_model(
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
     τ::Float64,
-    formulation::StorageModelFormulation;
+    formulation::StorageModelFormulation,
+    degradation::DegradationModel;
     silent::Bool=false,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
@@ -87,7 +89,8 @@ function run_model(
         prices,
         times,
         τ,
-        formulation;
+        formulation,
+        degradation;
         silent=silent,
         time_limit_sec=time_limit_sec,
         string_names=string_names,
