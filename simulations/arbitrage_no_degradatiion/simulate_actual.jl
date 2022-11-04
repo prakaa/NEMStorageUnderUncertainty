@@ -40,7 +40,7 @@ function collate_actual_data(region::String, start_time::DateTime, end_time::Dat
     return all_actual_data, actual_data
 end
 
-function simulate_actual(
+function simulate(
     storage::NEMStorageUnderUncertainty.StorageDevice,
     data::NEMStorageUnderUncertainty.ActualData,
     binding::T,
@@ -65,28 +65,36 @@ function simulate_actual(
     return results
 end
 
-function main()
+function simulate_actual2021_StandardArb_NoDeg_lookaheads()
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
     optimizer = set_optimizer("Gurobi")
+    lookaheads = [
+        Minute(5),
+        Minute(15),
+        Minute(30),
+        Minute(60),
+        Minute(240),
+        Minute(480),
+        Minute(24 * 60),
+    ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
-    (data_start, data_end) = (start_time, end_time + Minute(5))
-    all_actual_data, actual_data = collate_actual_data(
-        "NSW1", data_start, data_end
-    )
-    p = Progress(5)
-    Threads.@threads for c_multiplier in (0.25, 0.5, 1.0, 2.0, 5.0)
+    (data_start, data_end) = (start_time, end_time + lookaheads[end])
+    all_actual_data, actual_data = collate_actual_data("NSW1", data_start, data_end)
+    c_multipliers = (0.25, 0.5, 1.0, 2.0, 5.0)
+    p = Progress(length(c_multiplier))
+    Threads.@threads for c_multiplier in c_multipliers
         energy = 100.0
         power = energy * c_multiplier
         storage = NEMStorageUnderUncertainty.BESS(;
             power_capacity=power,
             energy_capacity=energy,
-            soc_min=0.1 * 30.0,
-            soc_max=0.9 * 30.0,
+            soc_min=0.1 * energy,
+            soc_max=0.9 * energy,
             η_charge=0.95,
             η_discharge=0.95,
-            soc₀=0.5 * 30.0,
+            soc₀=0.5 * energy,
             throughput=0.0,
         )
         @info("BESS $power MW $energy MWh")
@@ -96,18 +104,9 @@ function main()
             storage,
             actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage();
-            silent=false,
+            silent=true,
         )
         @info("Finished simulating perfect foresight")
-        lookaheads = [
-            Minute(5),
-            Minute(15),
-            Minute(30),
-            Minute(60),
-            Minute(240),
-            Minute(480),
-            Minute(24 * 60),
-        ]
         all_results = DataFrame[]
         for horizon in lookaheads
             @info("Starting lookahead $horizon simulation")
@@ -138,4 +137,4 @@ function main()
     end
 end
 
-main()
+simulate_actual2021_StandardArb_NoDeg_lookaheads()
