@@ -39,7 +39,9 @@ function collate_all_actual_and_forecast_data(
     (pd_df, p5_df) = NEMStorageUnderUncertainty.get_all_pd_and_p5_data(
         "data/forecast_price/PREDISPATCH", "data/forecast_price/P5MIN"
     )
-    forecast_data = get_ForecastData(pd_df, p5_df, region, (start_time, end_time), nothing)
+    forecast_data = NEMStorageUnderUncertainty.get_ForecastData(
+        pd_df, p5_df, region, (start_time, end_time), nothing
+    )
     return all_actual_data, forecast_data
 end
 
