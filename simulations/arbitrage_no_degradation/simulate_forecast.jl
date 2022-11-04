@@ -93,8 +93,7 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
         all_actual_data, "NSW1", (actual_data_start_time, actual_data_end_time)
     )
     c_multipliers = (0.25, 0.5, 1.0, 2.0, 5.0)
-    p = Progress(length(c_multipliers))
-    Threads.@threads for c_multiplier in c_multipliers
+    for c_multiplier in c_multipliers
         energy = 100.0
         power = energy * c_multiplier
         storage = NEMStorageUnderUncertainty.BESS(;
@@ -131,6 +130,7 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
             )
             push!(all_results, results)
             @info("Completed lookahead $horizon simulation")
+            next!(p)
         end
         df = vcat(all_results..., perfect_foresight_result)
         df = NEMStorageUnderUncertainty.calculate_actual_revenue!(
@@ -144,7 +144,6 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
             ),
             df,
         )
-        next!(p)
     end
 end
 
