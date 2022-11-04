@@ -71,7 +71,10 @@ function main()
     end
     optimizer = set_optimizer("Gurobi")
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
-    all_actual_data, actual_data = collate_actual_data("NSW1", start_time, end_time)
+    (data_start, data_end) = (start_time, end_time + Minute(5))
+    all_actual_data, actual_data = collate_actual_data(
+        "NSW1", data_start, data_end
+    )
     p = Progress(5)
     Threads.@threads for c_multiplier in (0.25, 0.5, 1.0, 2.0, 5.0)
         energy = 100.0
