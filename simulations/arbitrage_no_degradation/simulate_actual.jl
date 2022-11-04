@@ -83,7 +83,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
     (data_start, data_end) = (start_time, end_time + lookaheads[end])
     all_actual_data, actual_data = collate_actual_data("NSW1", data_start, data_end)
     c_multipliers = (0.25, 0.5, 1.0, 2.0, 5.0)
-    p = Progress(length(c_multiplier))
+    p = Progress(length(c_multipliers))
     Threads.@threads for c_multiplier in c_multipliers
         energy = 100.0
         power = energy * c_multiplier
