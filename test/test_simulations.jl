@@ -500,3 +500,33 @@ end
         end
     end
 end
+
+@testset "Run Perfect Foresight Simulation Tests" begin
+    test_data_path = joinpath(@__DIR__, "test_data")
+    all_actual_data = NEMStorageUnderUncertainty.get_all_actual_data(
+        joinpath(test_data_path, "dispatch_price")
+    )
+    actual_data = NEMStorageUnderUncertainty.get_ActualData(
+        all_actual_data, "NSW1", nothing
+    )
+    storage = NEMStorageUnderUncertainty.BESS(;
+        power_capacity=30.0,
+        energy_capacity=30.0,
+        soc_min=0.1 * 30.0,
+        soc_max=0.9 * 30.0,
+        η_charge=0.95,
+        η_discharge=0.95,
+        soc₀=0.5 * 30.0,
+        throughput=0.0,
+    )
+    results = NEMStorageUnderUncertainty.run_perfect_foresight(
+        optimizer_with_attributes(HiGHS.Optimizer),
+        storage,
+        actual_data,
+        NEMStorageUnderUncertainty.StandardArbitrage();
+        silent=true,
+    )
+    @test unique(results.lookahead_minutes)[] ==
+        Minute(all_actual_data.SETTLEMENTDATE[end] - all_actual_data.SETTLEMENTDATE[1])
+    @test unique(results.decision_time)[] == all_actual_data.SETTLEMENTDATE[1]
+end
