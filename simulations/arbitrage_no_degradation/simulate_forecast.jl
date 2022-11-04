@@ -112,7 +112,8 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
             optimizer,
             storage,
             actual_data,
-            NEMStorageUnderUncertainty.StandardArbitrage();
+            NEMStorageUnderUncertainty.StandardArbitrage(),
+            NEMStorageUnderUncertainty.NoDegradation();
             silent=true,
         )
         @info("Finished simulating perfect foresight")
