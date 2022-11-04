@@ -31,7 +31,8 @@ function test_run_model(
         actual.prices,
         actual.times,
         actual.τ,
-        NEMStorageUnderUncertainty.StandardArbitrage();
+        NEMStorageUnderUncertainty.StandardArbitrage(),
+        NEMStorageUnderUncertainty.NoDegradation();
         time_limit_sec=time_limit_sec,
     )
     return model
