@@ -207,6 +207,16 @@ end
             results, Minute(5), Minute(5), decision_start_time, decision_end_time
         )
         @test unique(results.status)[] == "binding"
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, actual_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  actual_data.τ
+        end
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -244,6 +254,16 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, actual_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  actual_data.τ
+        end
         @testset "Testing update storage state" begin
             filter!(:status => x -> x == "binding", results)
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
@@ -281,6 +301,16 @@ end
         )
         unique_decision_times = unique(results.decision_time)
         @test unique(diff(unique_decision_times))[] == Minute(15)
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, actual_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  actual_data.τ
+        end
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -303,6 +333,9 @@ end
     pd_path = joinpath(test_data_path, "PREDISPATCH")
     p5_path = joinpath(test_data_path, "P5MIN")
     (pd_df, p5_df) = NEMStorageUnderUncertainty.get_all_pd_and_p5_data(pd_path, p5_path)
+    all_actual_data = NEMStorageUnderUncertainty.get_all_actual_data(
+        joinpath(@__DIR__, "test_data", "dispatch_price_for_forecast")
+    )
     unaligned_forecast_data = NEMStorageUnderUncertainty.get_ForecastData(
         pd_df, p5_df, "NSW1", nothing, nothing
     )
@@ -341,6 +374,16 @@ end
             results, Minute(5), Minute(5), decision_start_time, decision_end_time
         )
         @test unique(results.status)[] == "binding"
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, aligned_forecast_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  aligned_forecast_data.τ
+        end
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
@@ -380,6 +423,16 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, aligned_forecast_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  aligned_forecast_data.τ
+        end
         @testset "Testing update storage state" begin
             filter!(:status => x -> x == "binding", results)
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
@@ -419,6 +472,16 @@ end
         )
         unique_decision_times = unique(results.decision_time)
         @test unique(diff(unique_decision_times))[] == Minute(15)
+        @testset "Test revenue calculations" begin
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+                results, all_actual_data, aligned_forecast_data.τ
+            )
+            test_row = revenue[rand(1:size(revenue)[1]), :]
+            @test test_row[:revenue] ==
+                test_row[:actual_price] *
+                  (test_row[:discharge_mw] - test_row[:charge_mw]) *
+                  aligned_forecast_data.τ
+        end
         @testset "Testing update storage state" begin
             charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
             discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
