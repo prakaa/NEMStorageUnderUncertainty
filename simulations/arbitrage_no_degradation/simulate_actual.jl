@@ -13,7 +13,7 @@ using ProgressMeter
 const GUROBI_ENV = Gurobi.Env()
 
 function set_optimizer(optimizer_str::String)
-    mip_optim_gap = 0.0001
+    mip_optim_gap = 0.0005
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
