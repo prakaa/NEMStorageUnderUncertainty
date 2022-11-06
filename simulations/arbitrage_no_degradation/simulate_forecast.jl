@@ -13,7 +13,7 @@ using ProgressMeter
 const GUROBI_ENV = Gurobi.Env()
 
 function set_optimizer(optimizer_str::String)
-    mip_optim_gap = 0.0001
+    mip_optim_gap = 0.0005
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
@@ -65,7 +65,8 @@ function simulate(
         binding=binding,
         horizon=horizon,
         silent=true,
-        show_progress=false,
+        show_progress=true,
+        time_limit_sec=300.0,
     )
     return results
 end
@@ -82,7 +83,7 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
         Minute(60),
         Minute(240),
         Minute(480),
-        Minute(24 * 60),
+        Minute(15 * 60),
     ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
     all_actual_data, forecast_data = collate_all_actual_and_forecast_data(
