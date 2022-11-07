@@ -17,7 +17,10 @@ function set_optimizer(optimizer_str::String)
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
-            () -> Gurobi.Optimizer(GUROBI_ENV), "MIPGap" => mip_optim_gap
+            () -> Gurobi.Optimizer(GUROBI_ENV),
+            "MIPGap" => mip_optim_gap,
+            "OutputFlag" => 0,
+            "LogToConsole" => 0,
         )
     elseif optimizer_str == "HiGHS"
         optimizer = optimizer_with_attributes(
