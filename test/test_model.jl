@@ -87,6 +87,7 @@ end
         throughputs = Vector(JuMP.value.(day_model[:throughput_mwh]))
         discharges = Vector(JuMP.value.(day_model[:discharge_mw]))
         discharge_index = rand(findall(x -> x > 0, discharges))
+        discharge_index = discharge_index[discharge_index .> 0]
         @test throughputs[discharge_index] ==
             throughputs[discharge_index - 1] + discharges[discharge_index] * (5.0 / 60.0)
         interval_model = test_run_model(
