@@ -13,18 +13,20 @@ using ProgressMeter
 const GUROBI_ENV = Gurobi.Env()
 
 function set_optimizer(optimizer_str::String)
-    mip_optim_gap = 0.001
+    mip_optim_gap = 0.0015
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
             () -> Gurobi.Optimizer(GUROBI_ENV),
             "MIPGap" => mip_optim_gap,
-            "OutputFlag" => 0,
-            "LogToConsole" => 0,
+            "LogFile" => joinpath(@__DIR__, "actual_gurobi.log"),
         )
     elseif optimizer_str == "HiGHS"
         optimizer = optimizer_with_attributes(
-            HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
+            HiGHS.Optimizer,
+            "mip_rel_gap" => mip_optim_gap,
+            "threads" => 20,
+            "log_file" => joinpath(@__DIR__, "actual_highs.log"),
         )
     elseif optimizer_str == "Cbc"
         optimizer = optimizer_with_attributes(Cbc.Optimizer, "ratioGap" => mip_optim_gap)
@@ -62,8 +64,9 @@ function simulate(
         decision_end_time=end_time,
         binding=binding,
         horizon=horizon,
-        silent=true,
+        silent=false,
         show_progress=false,
+        time_limit_sec=1800.0,
     )
     return results
 end
