@@ -66,7 +66,6 @@ function simulate(
         horizon=horizon,
         silent=true,
         show_progress=true,
-        time_limit_sec=300.0,
     )
     return results
 end
