@@ -71,7 +71,7 @@ function simulate(
         horizon=horizon,
         silent=false,
         show_progress=true,
-        time_limit_sec=1800.0,
+        time_limit_sec=900.0,
     )
     return results
 end
@@ -82,12 +82,12 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
     end
     optimizer = set_optimizer("Gurobi")
     lookaheads = [
-        #Minute(5),
-        #Minute(15),
-        #Minute(30),
-        #Minute(60),
-        #Minute(240),
-        #Minute(480),
+        Minute(5),
+        Minute(15),
+        Minute(30),
+        Minute(60),
+        Minute(240),
+        Minute(480),
         Minute(15 * 60),
     ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
