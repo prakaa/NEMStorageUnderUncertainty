@@ -13,13 +13,14 @@ using ProgressMeter
 const GUROBI_ENV = Gurobi.Env()
 
 function set_optimizer(optimizer_str::String)
-    mip_optim_gap = 0.0015
+    mip_optim_gap = 0.002
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
             () -> Gurobi.Optimizer(GUROBI_ENV),
             "MIPGap" => mip_optim_gap,
             "LogFile" => joinpath(@__DIR__, "actual_gurobi.log"),
+            "NodefileStart" => 0.5,
         )
     elseif optimizer_str == "HiGHS"
         optimizer = optimizer_with_attributes(
@@ -66,7 +67,7 @@ function simulate(
         horizon=horizon,
         silent=false,
         show_progress=false,
-        time_limit_sec=900.0,
+        time_limit_sec=30.0,
     )
     return results
 end
@@ -88,7 +89,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
     (data_start, data_end) = (start_time, end_time + lookaheads[end])
     all_actual_data, actual_data = collate_actual_data("NSW1", data_start, data_end)
-    c_multipliers = (0.25, 0.5, 1.0, 2.0, 5.0)
+    c_multipliers = (0.25, 0.5, 1.0, 2.0, 4.0)
     for c_multiplier in c_multipliers
         energy = 100.0
         power = energy * c_multiplier
