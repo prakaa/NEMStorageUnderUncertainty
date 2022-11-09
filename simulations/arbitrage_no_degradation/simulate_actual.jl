@@ -66,7 +66,7 @@ function simulate(
         binding=binding,
         horizon=horizon,
         silent=false,
-        show_progress=false,
+        show_progress=true,
         time_limit_sec=30.0,
     )
     return results
