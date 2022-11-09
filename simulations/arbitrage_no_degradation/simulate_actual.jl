@@ -84,6 +84,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
         Minute(60),
         Minute(240),
         Minute(480),
+        Minute(15 * 60),
         Minute(24 * 60),
     ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
