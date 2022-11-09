@@ -346,8 +346,10 @@ end
                   actual_data.τ
         end
         @testset "Testing SoC evolution" begin
-            charge_test_index = rand(findall(x -> x > 0, results.charge_mw))
-            discharge_test_index = rand(findall(x -> x > 0, results.discharge_mw))
+            charge_test_index = findall(x -> x > 0, results.charge_mw)
+            charge_test_index = rand(charge_test_index[1:(end - 1)])
+            discharge_test_index = findall(x -> x > 0, results.discharge_mw)
+            discharge_test_index = rand(discharge_test_index[1:(end - 1)])
             for test_index in (charge_test_index, discharge_test_index)
                 soc_next = results[test_index + 1, :soc_mwh]
                 calc_soc = (
