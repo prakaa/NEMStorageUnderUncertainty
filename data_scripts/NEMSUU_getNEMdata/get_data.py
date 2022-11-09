@@ -6,7 +6,7 @@ from nemseer import download_raw_data
 
 def main():
     analysis_start = "2020/12/31 23:30:00"
-    analysis_end = "2022/01/01 00:00:00"
+    analysis_end = "2022/02/01 00:00:00"
 
     nemosis_cache = Path("data/dispatch_price")
     if not nemosis_cache.exists():
