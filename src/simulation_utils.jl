@@ -54,3 +54,11 @@ function run_perfect_foresight(
     )
     return binding_results
 end
+
+function results_to_jld2(results_file::String, group::String, key::String, data::DataFrame)
+    @assert results_file[(end - 4):end] == ".jld2" "File extension must be '.jld2'"
+    f = jldopen(results_file, "a+"; compress=true)
+    f["$(group)/$(key)"] = data
+    close(f)
+    return nothing
+end
