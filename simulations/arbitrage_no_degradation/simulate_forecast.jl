@@ -52,6 +52,7 @@ function simulate(
         show_progress=true,
         time_limit_sec=30.0,
         relative_gap_in_results=true,
+        capture_all_decisions=true,
     )
     return results
 end
