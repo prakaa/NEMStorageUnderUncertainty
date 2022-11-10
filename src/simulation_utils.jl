@@ -49,8 +49,16 @@ function run_perfect_foresight(
         model, actual_data.times[1], actual_data.times[2], actual_data.times[end]
     )
     binding_results[:, :REGIONID] .= actual_data.region
-    binding_results[:, :lookahead_minutes] .= Minute(
-        actual_data.times[end] - actual_data.times[1]
+    binding_results[:, :lookahead_minutes] .= Dates.value(
+        Minute(actual_data.times[end] - actual_data.times[1])
     )
     return binding_results
+end
+
+function results_to_jld2(results_file::String, group::String, key::String, data::DataFrame)
+    @assert results_file[(end - 4):end] == ".jld2" "File extension must be '.jld2'"
+    jldopen(results_file, "a+"; compress=true) do f
+        f["$(group)/$(key)"] = data
+    end
+    return nothing
 end

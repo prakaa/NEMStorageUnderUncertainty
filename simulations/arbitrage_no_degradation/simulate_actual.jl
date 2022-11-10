@@ -19,15 +19,11 @@ function set_optimizer(optimizer_str::String)
         optimizer = optimizer_with_attributes(
             () -> Gurobi.Optimizer(GUROBI_ENV),
             "MIPGap" => mip_optim_gap,
-            "LogFile" => joinpath(@__DIR__, "actual_gurobi.log"),
             "NodefileStart" => 0.5,
         )
     elseif optimizer_str == "HiGHS"
         optimizer = optimizer_with_attributes(
-            HiGHS.Optimizer,
-            "mip_rel_gap" => mip_optim_gap,
-            "threads" => 20,
-            "log_file" => joinpath(@__DIR__, "actual_highs.log"),
+            HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
         )
     elseif optimizer_str == "Cbc"
         optimizer = optimizer_with_attributes(Cbc.Optimizer, "ratioGap" => mip_optim_gap)
@@ -65,9 +61,10 @@ function simulate(
         decision_end_time=end_time,
         binding=binding,
         horizon=horizon,
-        silent=false,
-        show_progress=false,
+        silent=true,
+        show_progress=true,
         time_limit_sec=30.0,
+        relative_gap_in_results=true,
     )
     return results
 end
@@ -84,6 +81,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
         Minute(60),
         Minute(240),
         Minute(480),
+        Minute(15 * 60),
         Minute(24 * 60),
     ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
@@ -134,12 +132,14 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
         df = NEMStorageUnderUncertainty.calculate_actual_revenue!(
             df, all_actual_data, actual_data.τ
         )
-        CSV.write(
+        NEMStorageUnderUncertainty.results_to_jld2(
             joinpath(
                 @__DIR__,
                 "results",
-                "NSW_$(power)MW_$(energy)MWh_actual_StandardArb_NoDeg_2021_lookaheads.csv",
+                "NSW_$(energy)MWh_StandardArb_NoDeg_2021_lookaheads.jld2",
             ),
+            "actual",
+            "$(power)MW",
             df,
         )
     end

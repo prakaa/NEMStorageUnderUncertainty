@@ -5,7 +5,7 @@ module NEMStorageUnderUncertainty
 export BESS
 
 # Imports
-import MathOptInterface: OptimizerWithAttributes
+import MathOptInterface: OptimizerWithAttributes, RelativeGap, get
 import Parquet: read_parquet
 
 # Using
@@ -15,6 +15,7 @@ using Impute: Impute
 using JuMP: JuMP
 using Logging
 using ProgressMeter
+using JLD2
 
 #DocStringExtensions Templates
 using DocStringExtensions

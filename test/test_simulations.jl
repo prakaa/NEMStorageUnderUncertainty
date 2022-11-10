@@ -2,6 +2,7 @@ using DataFrames
 using Dates
 using HiGHS
 using JuMP
+using JLD2
 using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using Test
 
@@ -261,6 +262,7 @@ end
             binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
+            relative_gap_in_results=true,
         )
         test_common_expected_results(
             results,
@@ -271,6 +273,8 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @test typeof(results.relative_gap) == Vector{Float64}
+        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, actual_data.τ
@@ -485,6 +489,7 @@ end
             binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
+            relative_gap_in_results=true,
         )
         test_common_expected_results(
             results,
@@ -495,6 +500,8 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @test typeof(results.relative_gap) == Vector{Float64}
+        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, aligned_forecast_data.τ
@@ -528,9 +535,11 @@ end
                 results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
             )
             test_index = rand(test_indices)
-            @test results[test_index + 1, :throughput_mwh] ==
+            @test isapprox(
+                results[test_index + 1, :throughput_mwh],
                 results[test_index, :throughput_mwh] +
-                  results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ
+                results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ,
+            )
             calc_soc = (
                 results[test_index, :soc_mwh] +
                 results[test_index + 1, :charge_mw] *
@@ -637,7 +646,16 @@ end
         NEMStorageUnderUncertainty.NoDegradation();
         silent=true,
     )
-    @test unique(results.lookahead_minutes)[] ==
+    @test unique(results.lookahead_minutes)[] == Dates.value(
         Minute(all_actual_data.SETTLEMENTDATE[end] - all_actual_data.SETTLEMENTDATE[1])
+    )
     @test unique(results.decision_time)[] == all_actual_data.SETTLEMENTDATE[1]
+    @testset "Test to JLD2" begin
+        @test_throws AssertionError NEMStorageUnderUncertainty.results_to_jld2(
+            "test.jld", "test", "perfect", results
+        )
+        NEMStorageUnderUncertainty.results_to_jld2("test.jld2", "test", "perfect", results)
+        @test load("test.jld2", "test/perfect") == results
+        rm("test.jld2")
+    end
 end
