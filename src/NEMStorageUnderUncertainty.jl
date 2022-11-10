@@ -5,7 +5,7 @@ module NEMStorageUnderUncertainty
 export BESS
 
 # Imports
-import MathOptInterface: OptimizerWithAttributes
+import MathOptInterface: OptimizerWithAttributes, RelativeGap, get
 import Parquet: read_parquet
 
 # Using

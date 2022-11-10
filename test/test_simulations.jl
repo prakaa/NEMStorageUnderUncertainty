@@ -261,6 +261,7 @@ end
             binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
+            relative_gap_in_results=true,
         )
         test_common_expected_results(
             results,
@@ -271,6 +272,8 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @test typeof(results.relative_gap) == Vector{Float64}
+        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, actual_data.τ
@@ -485,6 +488,7 @@ end
             binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
+            relative_gap_in_results=true
         )
         test_common_expected_results(
             results,
@@ -495,6 +499,8 @@ end
             capture_all_decisions=true,
         )
         @test unique(results.status) == Vector(["binding", "non binding"])
+        @test typeof(results.relative_gap) == Vector{Float64}
+        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, aligned_forecast_data.τ

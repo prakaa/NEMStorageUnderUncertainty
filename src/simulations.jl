@@ -278,6 +278,7 @@ function simulate_storage_operation(
     show_progress::Bool=true,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
+    relative_gap_in_results::Bool=false,
 ) where {T<:Period}
     @assert(
         decision_start_time ≤ decision_end_time, "Decision start time ≤ decision end time"
@@ -323,6 +324,11 @@ function simulate_storage_operation(
         non_binding_result, binding_result = _retrieve_results(
             m, decision_time, binding_start_time, binding_end_time
         )
+        if relative_gap_in_results
+            rel_gap = get(m, RelativeGap())
+            non_binding_result[:, :relative_gap] .= rel_gap
+            binding_result[:, :relative_gap] .= rel_gap
+        end
         binding_results[i] = binding_result
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
@@ -357,6 +363,7 @@ function simulate_storage_operation(
     show_progress::Bool=true,
     time_limit_sec::Union{Float64,Nothing}=nothing,
     string_names::Bool=true,
+    relative_gap_in_results::Bool=false,
 ) where {T<:Period}
     @assert(
         decision_start_time ≤ decision_end_time, "Decision start time ≤ decision end time"
@@ -404,6 +411,11 @@ function simulate_storage_operation(
         non_binding_result, binding_result = _retrieve_results(
             m, decision_time, binding_start_time, binding_end_time
         )
+        if relative_gap_in_results
+            rel_gap = get(m, RelativeGap())
+            non_binding_result[:, :relative_gap] .= rel_gap
+            binding_result[:, :relative_gap] .= rel_gap
+        end
         binding_results[i] = binding_result
         if capture_all_decisions
             non_binding_results[i] = non_binding_result
