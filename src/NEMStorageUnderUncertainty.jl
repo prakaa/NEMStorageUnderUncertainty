@@ -15,6 +15,7 @@ using Impute: Impute
 using JuMP: JuMP
 using Logging
 using ProgressMeter
+using JLD2
 
 #DocStringExtensions Templates
 using DocStringExtensions
