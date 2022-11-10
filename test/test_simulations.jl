@@ -2,6 +2,7 @@ using DataFrames
 using Dates
 using HiGHS
 using JuMP
+using JLD2
 using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using Test
 
@@ -488,7 +489,7 @@ end
             binding=Minute(5),
             horizon=Minute(10),
             capture_all_decisions=true,
-            relative_gap_in_results=true
+            relative_gap_in_results=true,
         )
         test_common_expected_results(
             results,
@@ -646,4 +647,12 @@ end
     @test unique(results.lookahead_minutes)[] ==
         Minute(all_actual_data.SETTLEMENTDATE[end] - all_actual_data.SETTLEMENTDATE[1])
     @test unique(results.decision_time)[] == all_actual_data.SETTLEMENTDATE[1]
+    @testset "Test to JLD2" begin
+        @test_throws AssertionError NEMStorageUnderUncertainty.results_to_jld2(
+            "test.jld", "test", "perfect", results
+        )
+        NEMStorageUnderUncertainty.results_to_jld2("test.jld2", "test", "perfect", results)
+        @test load("test.jld2", "test/perfect") == results
+        rm("test.jld2")
+    end
 end
