@@ -52,6 +52,7 @@ function run_perfect_foresight(
     binding_results[:, :lookahead_minutes] .= Dates.value(
         Minute(actual_data.times[end] - actual_data.times[1])
     )
+    binding_results[:, :relative_gap] .= get(model, RelativeGap())
     return binding_results
 end
 
