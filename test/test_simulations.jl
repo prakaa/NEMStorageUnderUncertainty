@@ -650,6 +650,8 @@ end
         Minute(all_actual_data.SETTLEMENTDATE[end] - all_actual_data.SETTLEMENTDATE[1])
     )
     @test unique(results.decision_time)[] == all_actual_data.SETTLEMENTDATE[1]
+    @test typeof(results.relative_gap) == Vector{Float64}
+        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
     @testset "Test to JLD2" begin
         @test_throws AssertionError NEMStorageUnderUncertainty.results_to_jld2(
             "test.jld", "test", "perfect", results
