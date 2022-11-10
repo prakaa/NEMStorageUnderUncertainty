@@ -57,8 +57,8 @@ end
 
 function results_to_jld2(results_file::String, group::String, key::String, data::DataFrame)
     @assert results_file[(end - 4):end] == ".jld2" "File extension must be '.jld2'"
-    f = jldopen(results_file, "a+"; compress=true)
-    f["$(group)/$(key)"] = data
-    close(f)
+    jldopen(results_file, "a+"; compress=true) do f
+        f["$(group)/$(key)"] = data
+    end
     return nothing
 end
