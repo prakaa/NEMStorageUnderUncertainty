@@ -65,7 +65,7 @@ function simulate(
         decision_end_time=end_time,
         binding=binding,
         horizon=horizon,
-        silent=false,
+        silent=true,
         show_progress=true,
         time_limit_sec=30.0,
     )
