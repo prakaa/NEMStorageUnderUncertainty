@@ -7,4 +7,4 @@
 
 module add julia/1.7.3
 julia -e 'using Pkg;Pkg.activate("NEMStorageUnderUncertainty");Pkg.instantiate()'
-julia --project="NEMStorageUnderUncertainty" NEMStorageUnderUncertainty/simulations/arbitrage_no_degradation/simulate_actual_400mw.jl
+julia --project="NEMStorageUnderUncertainty" NEMStorageUnderUncertainty/simulations/arbitrage_no_degradation/simulate_actual_100mw.jl
