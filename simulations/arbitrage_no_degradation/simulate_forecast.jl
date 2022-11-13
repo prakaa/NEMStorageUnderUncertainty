@@ -13,7 +13,7 @@ using ProgressMeter
 const GUROBI_ENV = Gurobi.Env()
 
 function set_optimizer(optimizer_str::String)
-    mip_optim_gap = 0.002
+    mip_optim_gap = 0.01
     if optimizer_str == "Gurobi"
         # Suppresses Gurobi solver output
         optimizer = optimizer_with_attributes(
@@ -55,7 +55,7 @@ function simulate(
     start_time::DateTime,
     end_time::DateTime,
 ) where {T<:Period}
-    optimizer = set_optimizer("Gurobi")
+    optimizer = set_optimizer("HiGHS")
     results = NEMStorageUnderUncertainty.simulate_storage_operation(
         optimizer,
         storage,
@@ -78,7 +78,7 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
-    optimizer = set_optimizer("Gurobi")
+    optimizer = set_optimizer("HiGHS")
     lookaheads = [
         Minute(5),
         Minute(15),
