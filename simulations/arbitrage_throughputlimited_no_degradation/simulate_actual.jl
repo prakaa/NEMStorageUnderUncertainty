@@ -55,7 +55,9 @@ function simulate(
         optimizer,
         storage,
         data,
-        NEMStorageUnderUncertainty.StandardArbitrage(),
+        NEMStorageUnderUncertainty.StandardArbitrageThroughputLimit(
+            365 * storage.energy_capacity
+        ),
         NEMStorageUnderUncertainty.NoDegradation();
         decision_start_time=start_time,
         decision_end_time=end_time,
