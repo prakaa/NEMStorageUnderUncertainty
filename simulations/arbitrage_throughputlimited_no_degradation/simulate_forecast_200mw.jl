@@ -1,35 +1,17 @@
 import MathOptInterface: OptimizerWithAttributes
-using Cbc
 using CSV
 using Dates
 using DataFrames
-using Gurobi
 using HiGHS
 using JuMP
 using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using ProgressMeter
 
-# suppresses Gurobi solver output
-const GUROBI_ENV = Gurobi.Env()
-
-function set_optimizer(optimizer_str::String)
+function set_optimizer()
     mip_optim_gap = 0.005
-    if optimizer_str == "Gurobi"
-        # Suppresses Gurobi solver output
-        optimizer = optimizer_with_attributes(
-            () -> Gurobi.Optimizer(GUROBI_ENV),
-            "MIPGap" => mip_optim_gap,
-            "NodefileStart" => 0.5,
-        )
-    elseif optimizer_str == "HiGHS"
-        optimizer = optimizer_with_attributes(
-            HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
-        )
-    elseif optimizer_str == "Cbc"
-        optimizer = optimizer_with_attributes(Cbc.Optimizer, "ratioGap" => mip_optim_gap)
-    else
-        error("Specify valid optimizer")
-    end
+    optimizer = optimizer_with_attributes(
+        HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
+    )
     return optimizer
 end
 
@@ -55,7 +37,7 @@ function simulate(
     start_time::DateTime,
     end_time::DateTime,
 ) where {T<:Period}
-    optimizer = set_optimizer("HiGHS")
+    optimizer = set_optimizer()
     results = NEMStorageUnderUncertainty.simulate_storage_operation(
         optimizer,
         storage,
@@ -80,7 +62,7 @@ function simulate_forecast2021_ArbThroughputLimits_NoDeg_lookaheads()
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
-    optimizer = set_optimizer("HiGHS")
+    optimizer = set_optimizer()
     lookaheads = [
         Minute(5),
         Minute(15),
