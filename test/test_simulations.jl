@@ -279,11 +279,14 @@ end
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, actual_data.τ
             )
-            test_row = revenue[rand(1:size(revenue)[1]), :]
+            binding_revenue = revenue[revenue.status .== "binding", :]
+            test_row = binding_revenue[rand(1:size(binding_revenue)[1]), :]
             @test test_row[:revenue] ==
                 test_row[:actual_price] *
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   actual_data.τ
+            non_binding_revenue = revenue[revenue.status .== "non binding", :]
+            @test all(ismissing.(non_binding_revenue.revenue))
         end
         @testset "Testing SoC evolution" begin
             filter!(:status => x -> x == "binding", results)
