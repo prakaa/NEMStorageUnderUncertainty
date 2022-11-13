@@ -506,11 +506,14 @@ end
             revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
                 results, all_actual_data, aligned_forecast_data.τ
             )
-            test_row = revenue[rand(1:size(revenue)[1]), :]
+            binding_revenue = revenue[revenue.status .== "binding", :]
+            test_row = binding_revenue[rand(1:size(binding_revenue)[1]), :]
             @test test_row[:revenue] ==
                 test_row[:actual_price] *
                   (test_row[:discharge_mw] - test_row[:charge_mw]) *
                   aligned_forecast_data.τ
+            non_binding_revenue = revenue[revenue.status .== "non binding", :]
+            @test all(ismissing.(non_binding_revenue.revenue))
         end
         @testset "Testing SoC evolution" begin
             filter!(:status => x -> x == "binding", results)
@@ -651,7 +654,7 @@ end
     )
     @test unique(results.decision_time)[] == all_actual_data.SETTLEMENTDATE[1]
     @test typeof(results.relative_gap) == Vector{Float64}
-        @test all(0.0 .≤ results.relative_gap .≤ 1.0)
+    @test all(0.0 .≤ results.relative_gap .≤ 1.0)
     @testset "Test to JLD2" begin
         @test_throws AssertionError NEMStorageUnderUncertainty.results_to_jld2(
             "test.jld", "test", "perfect", results
