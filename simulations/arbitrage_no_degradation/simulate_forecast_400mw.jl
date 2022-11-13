@@ -8,7 +8,7 @@ using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using ProgressMeter
 
 function set_optimizer()
-    mip_optim_gap = 0.01
+    mip_optim_gap = 0.005
     optimizer = optimizer_with_attributes(
         HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
     )
@@ -67,6 +67,7 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads()
         Minute(15),
         Minute(30),
         Minute(60),
+        Minute(120),
         Minute(240),
         Minute(480),
         Minute(15 * 60),

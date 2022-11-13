@@ -8,7 +8,7 @@ using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using ProgressMeter
 
 function set_optimizer()
-    mip_optim_gap = 0.01
+    mip_optim_gap = 0.005
     optimizer = optimizer_with_attributes(
         HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
     )
@@ -62,10 +62,10 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads()
         Minute(15),
         Minute(30),
         Minute(60),
+        Minute(120),
         Minute(240),
         Minute(480),
         Minute(15 * 60),
-        Minute(24 * 60),
     ]
     (start_time, end_time) = (DateTime(2021, 1, 1, 0, 0, 0), DateTime(2022, 1, 1, 0, 0, 0))
     (data_start, data_end) = (start_time, end_time + lookaheads[end])
