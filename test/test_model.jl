@@ -40,7 +40,7 @@ end
         η_charge=0.9,
         η_discharge=0.9,
         soc₀=0.5 * 30.0,
-        throughput=0.0,
+        throughput=50.0,
     )
     test_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
     test_interval_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
@@ -84,9 +84,12 @@ end
             bess, test_data_path, test_day_times[1], test_day_times[2], formulation
         )
         con_ref = JuMP.constraint_by_name(day_model, "throughput_limit")
-        @test isapprox(normalized_rhs(con_ref), (bess.energy_capacity * (1 + 1 / 288)))
+        @test isapprox(
+            normalized_rhs(con_ref),
+            (bess.energy_capacity * (1 + 1 / 288)) + bess.throughput,
+        )
         @test value(day_model[:throughput_mwh][end]) ≤
-            (bess.energy_capacity * (1 + 1 / 288))
+            (bess.energy_capacity * (1 + 1 / 288) + bess.throughput)
         throughputs = Vector(JuMP.value.(day_model[:throughput_mwh]))
         discharges = Vector(JuMP.value.(day_model[:discharge_mw]))
         discharge_index = rand(findall(x -> x > 0, discharges))
@@ -101,7 +104,9 @@ end
             formulation,
         )
         con_ref = JuMP.constraint_by_name(interval_model, "throughput_limit")
-        @test isapprox(normalized_rhs(con_ref), (bess.energy_capacity / 288))
+        @test isapprox(
+            normalized_rhs(con_ref), (bess.energy_capacity / 288) + bess.throughput
+        )
         @test JuMP.num_constraints(
             interval_model; count_variable_in_set_constraints=false
         ) == 5
