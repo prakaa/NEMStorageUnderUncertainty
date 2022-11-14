@@ -8,7 +8,7 @@ using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using ProgressMeter
 
 function set_optimizer()
-    mip_optim_gap = 0.005
+    mip_optim_gap = 0.01
     optimizer = optimizer_with_attributes(
         HiGHS.Optimizer, "mip_rel_gap" => mip_optim_gap, "threads" => 20
     )
