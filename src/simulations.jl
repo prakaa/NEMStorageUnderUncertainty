@@ -263,6 +263,31 @@ function _update_storage_state(
     return copy(storage, new_soc₀, new_throughput)
 end
 
+"""
+Simulate storage operation using actual data
+
+# Arguments
+
+  * `optimizer`: A solver optimizer
+  * `storage`: [`StorageDevice`](@ref)
+  * `data`: [`ActualData`](@ref)
+  * `model_formulation`: A model formulation ([`StorageModelFormulation`](@ref))
+  * `degradation`: A degradation model ([`DegradationModel`](@ref))
+  * `decision_start_time`: Decision start time
+  * `decision_end_time`: Decision end time
+  * `binding`: Binding horizon, out from `decision_start_time`
+  * `horizon`: Model lookahead horizon, out from `decision_start_time`
+  * `capture_all_decisions`: Default false. If true, report non binding decisions in results
+  * `silent`: default `false`. `true` to suppress solver output
+  * `time_limit_sec`: default `nothing`. `Float64` to impose solver time limit in seconds
+  * `string_names`: default `true`. `false` to disable JuMP string names
+  * `relative_gap_in_results`: default false. If true, adds a column with relative MIP gap
+    in results.
+
+# Returns
+
+Simulation results
+"""
 function simulate_storage_operation(
     optimizer::OptimizerWithAttributes,
     storage::StorageDevice,
@@ -348,6 +373,31 @@ function simulate_storage_operation(
     return results_df
 end
 
+"""
+Simulate storage operation using forecast data
+
+# Arguments
+
+  * `optimizer`: A solver optimizer
+  * `storage`: [`StorageDevice`](@ref)
+  * `data`: [`ForecastData`](@ref)
+  * `model_formulation`: A model formulation ([`StorageModelFormulation`](@ref))
+  * `degradation`: A degradation model ([`DegradationModel`](@ref))
+  * `decision_start_time`: Decision start time
+  * `decision_end_time`: Decision end time
+  * `binding`: Binding horizon, out from `decision_start_time`
+  * `horizon`: Model lookahead horizon, out from `decision_start_time`
+  * `capture_all_decisions`: Default false. If true, report non binding decisions in results
+  * `silent`: default `false`. `true` to suppress solver output
+  * `time_limit_sec`: default `nothing`. `Float64` to impose solver time limit in seconds
+  * `string_names`: default `true`. `false` to disable JuMP string names
+  * `relative_gap_in_results`: default false. If true, adds a column with relative MIP gap
+    in results.
+
+# Returns
+
+Simulation results
+"""
 function simulate_storage_operation(
     optimizer::OptimizerWithAttributes,
     storage::StorageDevice,

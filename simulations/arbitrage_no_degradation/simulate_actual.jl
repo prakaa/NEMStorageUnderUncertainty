@@ -107,7 +107,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads(power::Float64, energy
         next!(p)
     end
     df = vcat(all_results..., perfect_foresight_result)
-    df = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+    df = NEMStorageUnderUncertainty.calculate_actual_revenue(
         df, all_actual_data, actual_data.τ
     )
     return NEMStorageUnderUncertainty.results_to_jld2(

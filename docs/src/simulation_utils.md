@@ -1,6 +1,6 @@
-# Simulation Functions
+# Simulation Utilities
 
 ```@autodocs
 Modules = [NEMStorageUnderUncertainty]
-Pages = ["simulations.jl"]
+Pages = ["simulation_utils.jl"]
 ```

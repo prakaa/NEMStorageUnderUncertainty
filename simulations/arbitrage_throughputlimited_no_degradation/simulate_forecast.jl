@@ -123,7 +123,7 @@ function simulate_forecast2021_ArbThroughputLimits_NoDeg_lookaheads(
         next!(p)
     end
     df = vcat(all_results..., perfect_foresight_result)
-    df = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+    df = NEMStorageUnderUncertainty.calculate_actual_revenue(
         df, all_actual_data, forecast_data.τ
     )
     return NEMStorageUnderUncertainty.results_to_jld2(

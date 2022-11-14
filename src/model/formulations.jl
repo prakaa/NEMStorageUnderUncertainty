@@ -13,7 +13,8 @@ Maximises storage revenue:
   * All periods are treated (weighted) equally
   * No cycling/throughput limits are modelled
   * Revenue is purely defined by the spot price for energy
-  * Intertemporal SoC constraints are applied, including from `soc₀` to `soc₁`
+  * Intertemporal SoC constraints are applied, including from `e₀` (initial SoC of storage
+    device) to `e₁` (first modelled SoC)
 
 ```math
 \begin{aligned}
@@ -33,14 +34,19 @@ struct StandardArbitrage <: StorageModelFormulation end
 
 @doc raw"""
 # Summary
-Maximises storage revenue:
+Maximises storage revenue subject to pro-rata application of throughput limits:
 
   * All periods are treated (weighted) equally
-  * A throughput limit is modelled, with an annual throughput limit specified
-    * Each simulation includes this limit applied on a *pro rata* basis
-    * i.e. ``d_{max}`` for a simulation period is that period's proportion of a year
+  * A throughput limit is modelled, with an annual throughput limit (`d_max`) specified
+    * Each simulation includes this limit applied on a *pro rata* basis (i.e. proportion of
+      year in each model horizon)
+      * `d_max` for a model period is given by (where `d₀` is the initial
+        storage device throughput):
+        ``d_{max} = d_0 + \frac{t_T - t_1 + 5}{60 \times 24 \times 365} \times d_{limit}``
+      * `d_limit` is the throughput limit in MWh/year
   * Revenue is purely defined by the spot price for energy
-  * Intertemporal SoC constraints are applied, including from `soc₀` to `soc₁`
+  * Intertemporal SoC constraints are applied, including from `e₀` (initial SoC of storage
+    device) to `e₁` (first modelled SoC)
 
 ```math
 \begin{aligned}
@@ -55,7 +61,7 @@ Maximises storage revenue:
   & e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0\\
   & d_t-d_{t-1} - p_t\tau = 0\\
   & d_1 - d_0 - p_1\tau = 0\\
-  & d_{end} ≤ d_{max}\\
+  & d_T ≤ d_{max}\\
 \end{aligned}
 ```
 """
