@@ -6,7 +6,7 @@ do
 power=$(echo "$energy*$powerratio" | bc -l)
 for file in pbs/standardarb_nodeg/*
 do
-qsub -v "p=$power e=$energy" $file
+qsub -v "power=$power energy=$energy" $file
 sleep 1m
 done
 done
