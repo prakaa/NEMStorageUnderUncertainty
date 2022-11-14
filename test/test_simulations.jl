@@ -209,7 +209,7 @@ end
         )
         @test unique(results.status)[] == "binding"
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, actual_data.τ
             )
             test_row = revenue[rand(1:size(revenue)[1]), :]
@@ -276,7 +276,7 @@ end
         @test typeof(results.relative_gap) == Vector{Float64}
         @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, actual_data.τ
             )
             binding_revenue = revenue[revenue.status .== "binding", :]
@@ -343,7 +343,7 @@ end
         unique_decision_times = unique(results.decision_time)
         @test unique(diff(unique_decision_times))[] == Minute(15)
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, actual_data.τ
             )
             test_row = revenue[rand(1:size(revenue)[1]), :]
@@ -435,7 +435,7 @@ end
         )
         @test unique(results.status)[] == "binding"
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, aligned_forecast_data.τ
             )
             test_row = revenue[rand(1:size(revenue)[1]), :]
@@ -506,7 +506,7 @@ end
         @test typeof(results.relative_gap) == Vector{Float64}
         @test all(0.0 .≤ results.relative_gap .≤ 1.0)
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, aligned_forecast_data.τ
             )
             binding_revenue = revenue[revenue.status .== "binding", :]
@@ -579,7 +579,7 @@ end
         unique_decision_times = unique(results.decision_time)
         @test unique(diff(unique_decision_times))[] == Minute(15)
         @testset "Test revenue calculations" begin
-            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue!(
+            revenue = NEMStorageUnderUncertainty.calculate_actual_revenue(
                 results, all_actual_data, aligned_forecast_data.τ
             )
             test_row = revenue[rand(1:size(revenue)[1]), :]
