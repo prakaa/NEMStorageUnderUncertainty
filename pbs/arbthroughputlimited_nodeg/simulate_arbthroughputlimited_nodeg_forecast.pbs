@@ -15,5 +15,5 @@ do
 done
 module add julia/1.7.3
 julia -e 'using Pkg;Pkg.activate("NEMStorageUnderUncertainty");Pkg.instantiate()'
-julia --project="NEMStorageUnderUncertainty" NEMStorageUnderUncertainty/simulations/arbitrage_throughputlimited_no_degradation/simulate_forecast.jl $power $energy
+julia --project="NEMStorageUnderUncertainty" -- NEMStorageUnderUncertainty/simulations/arbitrage_throughputlimited_no_degradation/simulate_forecast.jl $power $energy
 echo "Submitted ArbThroughputLimited Forecast $power MW $energy MWh"
