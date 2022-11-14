@@ -83,7 +83,10 @@ end
         day_model = test_run_model(
             bess, test_data_path, test_day_times[1], test_day_times[2], formulation
         )
-        @test value(day_model[:throughput_mwh][end]) ≤ bess.energy_capacity
+        con_ref = JuMP.constraint_by_name(day_model, "throughput_limit")
+        @test isapprox(normalized_rhs(con_ref), (bess.energy_capacity * (1 + 1 / 288)))
+        @test value(day_model[:throughput_mwh][end]) ≤
+            (bess.energy_capacity * (1 + 1 / 288))
         throughputs = Vector(JuMP.value.(day_model[:throughput_mwh]))
         discharges = Vector(JuMP.value.(day_model[:discharge_mw]))
         discharge_index = rand(findall(x -> x > 0, discharges))
@@ -97,6 +100,8 @@ end
             test_interval_times[2],
             formulation,
         )
+        con_ref = JuMP.constraint_by_name(interval_model, "throughput_limit")
+        @test isapprox(normalized_rhs(con_ref), (bess.energy_capacity / 288))
         @test JuMP.num_constraints(
             interval_model; count_variable_in_set_constraints=false
         ) == 5

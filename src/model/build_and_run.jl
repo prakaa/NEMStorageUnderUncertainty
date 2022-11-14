@@ -90,7 +90,7 @@ function _build_storage_model(
     model = _initialise_model(;
         silent=silent, time_limit_sec=time_limit_sec, string_names=string_names
     )
-    proportion_of_year = Minute(times[end] - times[1]) / Minute(60 * 24 * 365)
+    proportion_of_year = (Minute(times[end] - times[1]) + Minute(5)) / Minute(60 * 24 * 365)
     d_max = throughput_limit.throughput_mwh_per_year * proportion_of_year
     @debug "Adding vars"
     _add_variables_power!(model, storage, times)
