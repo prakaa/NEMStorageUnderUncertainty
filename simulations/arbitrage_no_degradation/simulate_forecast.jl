@@ -86,8 +86,8 @@ function simulate_forecast2021_StandardArb_NoDeg_lookaheads(power::Float64, ener
         energy_capacity=energy,
         soc_min=0.1 * energy,
         soc_max=0.9 * energy,
-        η_charge=0.95,
-        η_discharge=0.95,
+        η_charge=0.91,
+        η_discharge=0.91,
         soc₀=0.5 * energy,
         throughput=0.0,
     )
