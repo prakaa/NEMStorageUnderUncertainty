@@ -4,11 +4,11 @@ using Plots, StatsPlots, Plots.PlotMeasures
 using JLD2
 
 function _sort_bess_capacities(data::DataFrame)
-    for cap in ("25.0MW", "50.0MW")
+    for cap in ("12.5MW", "25.0MW", "50.0MW")
         data[:, :sim] = replace.(data[:, :sim], cap => lpad(cap, 7, "0"))
     end
     sort!(data, :sim)
-    for cap in ("025.0MW", "050.0MW")
+    for cap in ("012.5MW", "025.0MW", "050.0MW")
         data[:, :sim] = replace.(data[:, :sim], cap => cap[2:end])
     end
     return data
