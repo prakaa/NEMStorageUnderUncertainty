@@ -110,7 +110,8 @@ function plot_standardarb_throughput_limits()
         results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2"
     )
     abs_revenues = plot_revenues_across_simulations(
-        jld2_file, "100MWh BESS, Arbitrage with 100MWh throughput per day\nNSW Prices 2021"
+        jld2_file,
+        "100MWh BESS, Arbitrage with 100MWh throughput per day (pro-rata)\nNSW Prices 2021",
     )
     savefig(
         abs_revenues,
