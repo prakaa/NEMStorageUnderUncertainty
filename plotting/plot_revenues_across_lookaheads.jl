@@ -1,6 +1,6 @@
 using Dates, DataFrames
 using NEMStorageUnderUncertainty
-using Plots, StatsPlots, Plots.PlotMeasures
+using CairoMakie
 using JLD2
 
 function _sort_bess_capacities(data::DataFrame)
@@ -32,62 +32,76 @@ function _get_revenue_summary_data(data::Dict{String,Any})
     summary_data = DataFrame(
         :revenue => revenues,
         :sim => bess_type,
-        :lookahead => lookaheads,
+        :lookahead => string.(lookaheads),
         :rel_gap => fill(0.01, length(lookaheads)),
     )
+    summary_data.lookahead =
+        replace.(summary_data.lookahead, "526500" => "Perfect Foresight")
     summary_data = _sort_bess_capacities(summary_data)
-    summary_data = unstack(summary_data, :sim, :lookahead, :revenue)
-    summary_data = rename(summary_data, Symbol("526500") => Symbol("Perfect Foresight"))
     return summary_data
 end
 
 function plot_revenues_across_simulations(
     jld2_path::String, title::String; percentage_of_perfect_foresight=false
 )
+    function _makie_plot(
+        plot_data::DataFrame,
+        title::String,
+        ylabel::String,
+        yscale::Function,
+        fillto::Float64,
+    )
+        plot_data.revenue = Float64.(plot_data.revenue)
+        (sims, lookaheads) = (unique(plot_data.sim), unique(plot_data.lookahead))
+        xs = [findfirst(x -> x == sim, sims) for sim in plot_data.sim]
+        groups = [
+            findfirst(x -> x == lookahead, lookaheads) for lookahead in plot_data.lookahead
+        ]
+        colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
+        fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+        ax = Axis(
+            fig[1, 1]; xticks=(1:length(sims), sims), title, ylabel=ylabel, yscale=yscale
+        )
+        barplot!(
+            ax, xs, plot_data.revenue; dodge=groups, color=colors[groups], fillto=fillto
+        )
+        ylims!(ax, 1.0, nothing)
+        # Legend
+        elements = [PolyElement(; polycolor=colors[i]) for i in 1:length(lookaheads)]
+        Legend(
+            fig[1, 2],
+            elements,
+            lookaheads,
+            "Lookaheads\n(minutes)";
+            framevisible=false,
+            patchcolor="#f0f0f0",
+        )
+        return fig
+    end
+
     data = load(jld2_path)
     plot_data = _get_revenue_summary_data(data)
     if percentage_of_perfect_foresight
-        for col in propertynames(plot_data[:, 2:end])
-            plot_data[:, col] = @. plot_data[:, col] /
-                                   plot_data[:, Symbol("Perfect Foresight")] * 100
+        unstacked = unstack(plot_data, :sim, :lookahead, :revenue)
+        for col in propertynames(unstacked[:, 2:end])
+            unstacked[:, col] = @. unstacked[:, col] /
+                                   unstacked[:, Symbol("Perfect Foresight")] * 100
         end
-        scale = :none
+        unstacked = unstacked[:, Not(Symbol("Perfect Foresight"))]
+        plot_data = stack(
+            unstacked, Not(:sim); variable_name=:lookahead, value_name=:revenue
+        )
+        plot_data = _sort_bess_capacities(plot_data)
         ylabel = "% of perfect foresight revenue"
-        plot_data = plot_data[:, Not(Symbol("Perfect Foresight"))]
+        yscale = identity
+        fillto = 0.0
     else
-        scale = :log10
         ylabel = "Revenue (AUD)"
+        yscale = log10
+        fillto = 1.0
     end
-    plot_matrix = Float64.(Array(plot_data[:, 2:end]))
-    groupby_labels = permutedims(names(plot_data)[2:end])
-    colors = [[color] for color in palette(:roma, length(groupby_labels))]'
-    fnt = "Source Sans Pro"
-    return groupedbar(
-        plot_data[:, :sim],
-        plot_matrix;
-        xrot=45,
-        ylabel=ylabel,
-        size=(800, 600),
-        lw=0,
-        title=title,
-        label=groupby_labels,
-        color=colors,
-        bg="#f0f0f0",
-        legend_title="Lookahead\n(minutes)",
-        margin=5px,
-        yscale=scale,
-        guidefont=font(fnt, 12),
-        titlefont=font(fnt, 16),
-        tickfont=font(fnt, 10),
-        legendtitlefont=font(fnt, 8),
-        legendfont=font(fnt, 8),
-        extra_kwargs=KW(
-            :plot => KW(
-                :legend =>
-                    KW(:x => 0.5, :y => -0.01, :orientation => "h", :borderwidth => 0),
-            ),
-        ),
-    )
+    fig = _makie_plot(plot_data, title, ylabel, yscale, fillto)
+    return fig
 end
 
 function plot_value_of_information_and_foresight(jld2_path::String, title::String)
@@ -146,27 +160,30 @@ function plot_standardarb_nodeg()
         results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_lookaheads.jld2"
     )
     abs_revenues = plot_revenues_across_simulations(
-        jld2_file, "100MWh BESS, Standard Arbitrage\nNSW Prices 2021"
+        jld2_file, "100MWh BESS - Arbitrage - NSW Prices 2021"
     )
-    savefig(
-        abs_revenues,
+    save(
         joinpath(
             results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_revenues_lookaheads.pdf"
         ),
+        abs_revenues;
+        pt_per_unit=1,
     )
     percentage_revenues = plot_revenues_across_simulations(
         jld2_file,
-        "100MWh BESS, Standard Arbitrage\nNSW Prices 2021",
+        "100MWh BESS - Arbitrage - NSW Prices 2021",
         ;
         percentage_of_perfect_foresight=true,
     )
-    return savefig(
-        percentage_revenues,
+    save(
         joinpath(
             results_path,
             "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
+        percentage_revenues;
+        pt_per_unit=1,
     )
+    return nothing
 end
 
 function plot_standardarb_throughput_limits()
@@ -175,30 +192,50 @@ function plot_standardarb_throughput_limits()
         results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2"
     )
     abs_revenues = plot_revenues_across_simulations(
-        jld2_file,
-        "100MWh BESS, Arbitrage with 100MWh throughput per day (pro-rata)\nNSW Prices 2021",
+        jld2_file, "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021"
     )
-    savefig(
-        abs_revenues,
+    save(
         joinpath(
             results_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_revenues_lookaheads.pdf",
         ),
+        abs_revenues;
+        pt_per_unit=1,
     )
     percentage_revenues = plot_revenues_across_simulations(
         jld2_file,
-        "100MWh BESS, Arbitrage with 100MWh throughput per day\nNSW Prices 2021";
+        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
         percentage_of_perfect_foresight=true,
     )
-    return savefig(
-        percentage_revenues,
+    return save(
         joinpath(
             results_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
+        percentage_revenues;
+        pt_per_unit=1,
     )
 end
 
-plotlyjs()
+font = "Source Sans Pro"
+theme = Theme(;
+    Axis=(
+        backgroundcolor="#f0f0f0",
+        spinewidth=0,
+        xticklabelrotation=45,
+        titlesize=25,
+        titlegap=15,
+        titlefont=font,
+        xlabelfont=font,
+        ylabelfont=font,
+        ylabelsize=18,
+        xticklabelfont=font,
+        xticklabelsize=16,
+        yticklabelfont=font,
+        yticklabelsize=14,
+    ),
+    Legend=(titlefont=font, labelfont=font, labelsize=14),
+)
+set_theme!(theme)
 plot_standardarb_nodeg()
 plot_standardarb_throughput_limits()
