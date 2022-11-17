@@ -105,53 +105,98 @@ function plot_revenues_across_simulations(
 end
 
 function plot_value_of_information_and_foresight(jld2_path::String, title::String)
-    data = load(jld2_path)
-    plot_data = _get_revenue_summary_data(data)
-    actual_caps = [
-        cap[2] for cap in split.(unique(plot_data.sim), "/") if cap[1] == "actual"
-    ]
-    forecast_caps = [
-        cap[2] for cap in split.(unique(plot_data.sim), "/") if cap[1] == "forecast"
-    ]
-    caps = intersect(actual_caps, forecast_caps)
-    v_pi = DataFrame[]
-    v_pf = DataFrame[]
-    for cap in caps
-        value_of_pi =
-            plot_data[plot_data.sim .== "actual/$cap", 2:(end - 1)] .-
-            plot_data[plot_data.sim .== "forecast/$cap", 2:(end - 1)]
-        push!(v_pi, hcat(DataFrame(:bess_mw => cap), value_of_pi))
-        value_of_pf =
-            plot_data[plot_data.sim .== "forecast/$cap", end] .-
-            plot_data[plot_data.sim .== "forecast/$cap", 2:(end - 1)]
-        push!(v_pf, hcat(DataFrame(:bess_mw => cap), value_of_pf))
+    function _makie_plot(
+        plot_data::DataFrame,
+        title::String,
+        ylabel::String,
+        yscale::Function,
+        fillto::Float64,
+    )
+        (bess_mw, lookaheads) = (unique(plot_data.bess), unique(plot_data.lookahead))
+        xs = [findfirst(x -> x == bess, bess_mw) for bess in plot_data.bess]
+        groups = [
+            findfirst(x -> x == lookahead, lookaheads) for lookahead in plot_data.lookahead
+        ]
+        v_pf_colors = [
+            c for c in cgrad(:roma, length(lookaheads); categorical=true, alpha=0.8)
+        ]
+        fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+        ax = Axis(
+            fig[1, 1];
+            xticks=(1:length(bess_mw), bess_mw),
+            title,
+            ylabel=ylabel,
+            yscale=yscale,
+        )
+        barplot!(
+            ax,
+            xs,
+            plot_data.v_pf;
+            dodge=groups,
+            color=v_pf_colors[groups],
+            fillto=fillto,
+            strokecolor=:gray,
+            strokewidth=1,
+        )
+        barplot!(
+            ax,
+            xs,
+            plot_data.v_pi;
+            dodge=groups,
+            color=:transparent,
+            fillto=fillto,
+            strokewidth=1,
+        )
+        ylims!(ax, 1.0, nothing)
+        # Legend
+        lk_lg = [PolyElement(; polycolor=v_pf_colors[i]) for i in 1:length(lookaheads)]
+        v_lg = [
+            PolyElement(; polycolor=:transparent, strokecolor=c, strokewidth=1) for
+            c in (:gray, :black)
+        ]
+        Legend(
+            fig[1, 2],
+            [v_lg, lk_lg],
+            [["Perfect foresight", "Perfect information"], lookaheads],
+            ["Value of:", "Lookaheads\n(minutes)"];
+            framevisible=false,
+            patchcolor="#f0f0f0",
+        )
+        return fig
     end
-    v_pi = vcat(v_pi...)
-    v_pf = vcat(v_pf...)
 
-    scale = :log10
-    ylabel = "Revenue (AUD)"
-    return plot_data
-    #plot_matrix = Float64.(Array(plot_data[:, 2:end]))
-    #groupby_labels = permutedims(names(plot_data)[2:end])
-    #colors = [[color] for color in palette(:roma, 8)]'
-    #return groupedbar(
-    #    plot_data[:, :sim],
-    #    plot_matrix;
-    #    rot=45,
-    #    ylabel=ylabel,
-    #    size=(800, 650),
-    #    fontfamily="serif",
-    #    legend=Symbol(:outer, :right),
-    #    framestyle=:box,
-    #    title=title,
-    #    label=groupby_labels,
-    #    color=colors,
-    #    bg="#f0f0f0",
-    #    legend_title="Lookahead\n(minutes)",
-    #    bottom_margin=50px,
-    #    yscale=scale,
-    #)
+    data = load(jld2_path)
+    df = _get_revenue_summary_data(data)
+    actual_caps = [cap[2] for cap in split.(unique(df.sim), "/") if cap[1] == "actual"]
+    forecast_caps = [cap[2] for cap in split.(unique(df.sim), "/") if cap[1] == "forecast"]
+    caps = intersect(actual_caps, forecast_caps)
+    lookaheads = [lk for lk in unique(df.lookahead) if lk != "Perfect Foresight"]
+    (xticklabels, groups) = (String[], String[])
+    (v_pis, v_pfs) = (Float64[], Float64[])
+    for cap in caps
+        for lookahead in lookaheads
+            lk_mask = df.lookahead .== lookahead
+            v_pi =
+                df[(df.sim .== "actual/$cap") .& lk_mask, :revenue] -
+                df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
+            v_pf =
+                df[
+                    (df.sim .== "forecast/$cap") .& (df.lookahead .== "Perfect Foresight"),
+                    :revenue,
+                ] - df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
+            push!(xticklabels, cap)
+            push!(groups, lookahead)
+            push!(v_pis, v_pi[])
+            push!(v_pfs, v_pf[])
+        end
+    end
+    plot_data = DataFrame(
+        :bess => xticklabels, :lookahead => groups, :v_pi => v_pis, :v_pf => v_pfs
+    )
+    scale = identity
+    ylabel = "Value (AUD)"
+    fig = _makie_plot(plot_data, title, ylabel, scale, 0.0)
+    return fig
 end
 
 function plot_standardarb_nodeg()
