@@ -11,3 +11,7 @@ optimize!(model)
 using Plots
 p = plot(rand(2, 2))
 display(p)
+
+using CairoMakie
+barplot([1,2,3])
+lines([1,2,3])
