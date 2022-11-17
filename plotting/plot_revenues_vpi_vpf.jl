@@ -104,7 +104,9 @@ function plot_revenues_across_simulations(
     return fig
 end
 
-function plot_value_of_information_and_foresight(jld2_path::String, title::String)
+function plot_value_of_information_and_foresight(
+    jld2_path::String, title::String; percentage_of_perfect_foresight=false
+)
     function _makie_plot(
         plot_data::DataFrame,
         title::String,
@@ -176,14 +178,17 @@ function plot_value_of_information_and_foresight(jld2_path::String, title::Strin
     for cap in caps
         for lookahead in lookaheads
             lk_mask = df.lookahead .== lookahead
-            v_pi =
-                df[(df.sim .== "actual/$cap") .& lk_mask, :revenue] -
-                df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
-            v_pf =
-                df[
-                    (df.sim .== "forecast/$cap") .& (df.lookahead .== "Perfect Foresight"),
-                    :revenue,
-                ] - df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
+            pf_rev = df[
+                (df.sim .== "actual/$cap") .& (df.lookahead .== "Perfect Foresight"),
+                :revenue,
+            ]
+            pi_rev = df[(df.sim .== "actual/$cap") .& lk_mask, :revenue]
+            v_pi = pi_rev - df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
+            v_pf = pf_rev - df[(df.sim .== "forecast/$cap") .& lk_mask, :revenue]
+            if percentage_of_perfect_foresight
+                v_pi = @. v_pi / pf_rev * 100
+                v_pf = @. v_pf / pf_rev * 100
+            end
             push!(xticklabels, cap)
             push!(groups, lookahead)
             push!(v_pis, v_pi[])
@@ -194,7 +199,11 @@ function plot_value_of_information_and_foresight(jld2_path::String, title::Strin
         :bess => xticklabels, :lookahead => groups, :v_pi => v_pis, :v_pf => v_pfs
     )
     scale = identity
-    ylabel = "Value (AUD)"
+    if percentage_of_perfect_foresight
+        ylabel = "Value (% of perfect foresight revenue)"
+    else
+        ylabel = "Value (AUD)"
+    end
     fig = _makie_plot(plot_data, title, ylabel, scale, 0.0)
     return fig
 end
@@ -228,6 +237,30 @@ function plot_standardarb_nodeg()
         percentage_revenues;
         pt_per_unit=1,
     )
+    vpf_vpi = plot_value_of_information_and_foresight(
+        jld2_file,
+        "100MWh BESS - Arbitrage - NSW Prices 2021",
+        ;
+        percentage_of_perfect_foresight=false,
+    )
+    save(
+        joinpath(results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_vpf_vpi.pdf"),
+        vpf_vpi;
+        pt_per_unit=1,
+    )
+    per_vpf_vpi = plot_value_of_information_and_foresight(
+        jld2_file,
+        "100MWh BESS - Arbitrage - NSW Prices 2021",
+        ;
+        percentage_of_perfect_foresight=true,
+    )
+    save(
+        joinpath(
+            results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_vpf_vpi.pdf"
+        ),
+        per_vpf_vpi;
+        pt_per_unit=1,
+    )
     return nothing
 end
 
@@ -252,7 +285,7 @@ function plot_standardarb_throughput_limits()
         "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
         percentage_of_perfect_foresight=true,
     )
-    return save(
+    save(
         joinpath(
             results_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_revenues_lookaheads.pdf",
@@ -260,6 +293,30 @@ function plot_standardarb_throughput_limits()
         percentage_revenues;
         pt_per_unit=1,
     )
+    vpf_vpi = plot_value_of_information_and_foresight(
+        jld2_file,
+        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
+        percentage_of_perfect_foresight=false,
+    )
+    save(
+        joinpath(results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_vpf_vpi.pdf"),
+        vpf_vpi;
+        pt_per_unit=1,
+    )
+    per_vpf_vpi = plot_value_of_information_and_foresight(
+        jld2_file,
+        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
+        percentage_of_perfect_foresight=true,
+    )
+    save(
+        joinpath(
+            results_path,
+            "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_vpf_vpi.pdf",
+        ),
+        per_vpf_vpi;
+        pt_per_unit=1,
+    )
+    return nothing
 end
 
 font = "Source Sans Pro"
