@@ -76,7 +76,7 @@ end
             time_limit_sec=0.01,
         )
     end
-    @testset "Test StandardArbitrageThroughputLimit" begin
+    @testset "Test Throughput Limits" begin
         formulation = NEMStorageUnderUncertainty.StandardArbitrageThroughputLimit(
             bess.energy_capacity * 365
         )
@@ -84,12 +84,9 @@ end
             bess, test_data_path, test_day_times[1], test_day_times[2], formulation
         )
         con_ref = JuMP.constraint_by_name(day_model, "throughput_limit")
-        @test isapprox(
-            normalized_rhs(con_ref),
-            (bess.energy_capacity * (1 + 1 / 288)) + bess.throughput,
-        )
+        @test isapprox(normalized_rhs(con_ref), bess.energy_capacity + bess.throughput)
         @test value(day_model[:throughput_mwh][end]) ≤
-            (bess.energy_capacity * (1 + 1 / 288) + bess.throughput)
+            (bess.energy_capacity * bess.throughput)
         throughputs = Vector(JuMP.value.(day_model[:throughput_mwh]))
         discharges = Vector(JuMP.value.(day_model[:discharge_mw]))
         discharge_index = rand(findall(x -> x > 0, discharges))
