@@ -48,7 +48,7 @@ Base.@kwdef struct BESS <: StorageDevice
         η_charge::Float64,
         η_discharge::Float64,
         soc₀::Float64,
-        throughput::Float64=0,
+        throughput::Float64=0.0,
     )
         if any([cap ≤ 0 for cap in (power_capacity, energy_capacity)])
             throw(DomainError("Capacities should be > 0"))
