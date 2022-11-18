@@ -6,7 +6,7 @@ do
 for powerratio in 0.125 0.25 0.5 1 2 4 8
 do
 power=$(echo "$energy*$powerratio" | bc -l)
-for file in pbs/arbitrage_throughputpenalty_no_deg/*
+for file in pbs/arbthroughputpenalty_no_deg/*
 do
 qsub -v "power=$power,energy=$energy,cost=$cost" $file
 sleep 30s
