@@ -1,4 +1,4 @@
-import Dates: DateTime
+import Dates: DateTime, Minute
 using NEMStorageUnderUncertainty: NEMStorageUnderUncertainty
 using HiGHS
 using JuMP
@@ -110,5 +110,44 @@ end
         @test value.(interval_model[:throughput_mwh])[test_interval_times[1]] ==
             bess.throughput +
               value.(interval_model[:discharge_mw])[test_interval_times[1]] * (5.0 / 60.0)
+    end
+
+    @testset "Test Throughput Penalty" begin
+        tp_lim = bess.energy_capacity * 365.0 * 10
+        cap_cost_per_mwh = 1000.0 * 1000.0
+        formulation = NEMStorageUnderUncertainty.ArbitrageThroughputPenalty(
+            tp_lim, cap_cost_per_mwh
+        )
+        day_model = test_run_model(
+            bess, test_data_path, test_day_times[1], test_day_times[2], formulation
+        )
+        vals = Dict()
+        discharge_mw = day_model[:discharge_mw]
+        charge_mw = day_model[:charge_mw]
+        throughput_mwh = day_model[:throughput_mwh]
+        for t in test_day_times[1]:Minute(5):test_day_times[2]
+            vals[discharge_mw[t]] = 0.0
+            vals[charge_mw[t]] = 0.0
+        end
+        vals[throughput_mwh[test_day_times[2]]] = bess.throughput + 10.0
+        objval = value(z -> vals[z], JuMP.objective_function(day_model))
+        @test isapprox(objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh))
+        interval_model = test_run_model(
+            bess,
+            test_data_path,
+            test_interval_times[1],
+            test_interval_times[2],
+            formulation,
+        )
+        discharge_mw = interval_model[:discharge_mw]
+        charge_mw = interval_model[:charge_mw]
+        throughput_mwh = interval_model[:throughput_mwh]
+        for t in test_interval_times[1]:Minute(5):test_interval_times[2]
+            vals[discharge_mw[t]] = 0.0
+            vals[charge_mw[t]] = 0.0
+        end
+        vals[throughput_mwh[test_interval_times[2]]] = bess.throughput + 10.0
+        objval = value(z -> vals[z], JuMP.objective_function(interval_model))
+        @test isapprox(objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh))
     end
 end
