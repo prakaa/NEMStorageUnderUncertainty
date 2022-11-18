@@ -210,6 +210,10 @@ end
 
 function plot_standardarb_nodeg()
     results_path = "simulations/arbitrage_no_degradation/results"
+    plot_path = joinpath(results_path, "plots")
+    if !isdir(plot_path)
+        mkdir(plot_path)
+    end
     jld2_file = joinpath(
         results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_lookaheads.jld2"
     )
@@ -218,7 +222,7 @@ function plot_standardarb_nodeg()
     )
     save(
         joinpath(
-            results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_revenues_lookaheads.pdf"
+            plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_revenues_lookaheads.pdf"
         ),
         abs_revenues;
         pt_per_unit=1,
@@ -231,7 +235,7 @@ function plot_standardarb_nodeg()
     )
     save(
         joinpath(
-            results_path,
+            plot_path,
             "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
         percentage_revenues;
@@ -244,7 +248,7 @@ function plot_standardarb_nodeg()
         percentage_of_perfect_foresight=false,
     )
     save(
-        joinpath(results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_vpf_vpi.pdf"),
+        joinpath(plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_vpf_vpi.pdf"),
         vpf_vpi;
         pt_per_unit=1,
     )
@@ -256,7 +260,7 @@ function plot_standardarb_nodeg()
     )
     save(
         joinpath(
-            results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_vpf_vpi.pdf"
+            plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_vpf_vpi.pdf"
         ),
         per_vpf_vpi;
         pt_per_unit=1,
@@ -266,6 +270,10 @@ end
 
 function plot_standardarb_throughput_limits()
     results_path = "simulations/arbitrage_throughputlimited_no_degradation/results"
+    plot_path = joinpath(results_path, "plots")
+    if !isdir(plot_path)
+        mkdir(plot_path)
+    end
     jld2_file = joinpath(
         results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2"
     )
@@ -274,7 +282,7 @@ function plot_standardarb_throughput_limits()
     )
     save(
         joinpath(
-            results_path,
+            plot_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_revenues_lookaheads.pdf",
         ),
         abs_revenues;
@@ -287,7 +295,7 @@ function plot_standardarb_throughput_limits()
     )
     save(
         joinpath(
-            results_path,
+            plot_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
         percentage_revenues;
@@ -299,7 +307,7 @@ function plot_standardarb_throughput_limits()
         percentage_of_perfect_foresight=false,
     )
     save(
-        joinpath(results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_vpf_vpi.pdf"),
+        joinpath(plot_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_vpf_vpi.pdf"),
         vpf_vpi;
         pt_per_unit=1,
     )
@@ -310,7 +318,7 @@ function plot_standardarb_throughput_limits()
     )
     save(
         joinpath(
-            results_path,
+            plot_path,
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_vpf_vpi.pdf",
         ),
         per_vpf_vpi;
