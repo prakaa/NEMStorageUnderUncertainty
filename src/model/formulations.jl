@@ -97,6 +97,11 @@ Maximises storage revenue subject to pro-rata penalisation of throughput/cycling
   & d_1 - d_0 - p_1\tau = 0\\
   & d_T ≤ d_{max}\\
 \end{aligned}
+
+# Attributes
+
+  * `d_lifetime`: Warrantied throughput lifetime of the storage device in MWh
+  * `c_capital`: Capital cost of storage device in AUD/MWh
 ```
 """
 struct ArbitrageThroughputPenalty <: StorageModelFormulation
