@@ -109,6 +109,46 @@ function plot_throughputs_arbthroughputlimit_nodeg()
         )
     end
 end
+
+function plot_throughputs_arbthroughputpenalty_nodeg()
+    results_path = "simulations/arbitrage_throughputpenalty_no_degradation/results"
+    plot_path = joinpath(results_path, "plots")
+    if !isdir(plot_path)
+        mkdir(plot_path)
+    end
+    files = [f for f in readdir(results_path) if endswith(f, ".jld2")]
+    for file in files
+        jld2_file = joinpath(results_path, file)
+        data = load(jld2_file)
+        selected = [
+            key for key in keys(data) if (
+                contains(key, "forecast") &
+                any(contains.(key, ["25.0MW", "100.0MW", "400.0MW"]))
+            )
+        ]
+        throughput_penalty = match(r".*_ArbThroughputPenalty([0-9.]*)_.*", file)[1]
+        throughput_penalty = round(Int, parse(Float64, throughput_penalty))
+        for key in selected
+            (data_type, mw) = split(key, "/")
+            data_type = uppercasefirst(data_type)
+            title = (
+                "100MWh/$(mw) BESS - TP Penalty $(throughput_penalty)AUD/MWh - " *
+                "NSW Prices 2021 ($(data_type))"
+            )
+            fig = plot_throughputs(data, key, title)
+            int_mw = split(mw, ".")[1]
+            save(
+                joinpath(
+                    plot_path,
+                    "NSW_$(throughput_penalty)AUDpMWh_100MWh$(int_mw)MW_throughputs.pdf",
+                ),
+                fig;
+                pt_per_unit=1,
+            )
+        end
+    end
+end
+
 font = "Source Sans Pro"
 theme = Theme(;
     Axis=(
@@ -131,3 +171,4 @@ theme = Theme(;
 set_theme!(theme)
 plot_throughputs_arb_nodeg()
 plot_throughputs_arbthroughputlimit_nodeg()
+plot_throughputs_arbthroughputpenalty_nodeg()
