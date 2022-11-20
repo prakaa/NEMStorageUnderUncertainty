@@ -52,6 +52,9 @@ function simulate(
     return results
 end
 
+"""
+N.B. capital_cost should be in AUD/MWh
+"""
 function simulate_actual2021_ArbThroughputPenalty_NoDeg_lookaheads(
     power::Float64, energy::Float64, capital_cost::Float64
 )
