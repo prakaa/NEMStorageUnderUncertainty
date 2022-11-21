@@ -80,6 +80,7 @@ function run_perfect_foresight(
         storage,
         actual_data.prices,
         actual_data.times,
+        actual_data.times[end],
         actual_data.τ,
         formulation,
         degradation;

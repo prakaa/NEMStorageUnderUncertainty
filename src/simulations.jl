@@ -339,6 +339,7 @@ function simulate_storage_operation(
             storage,
             simulate_prices,
             simulate_times,
+            binding_end_time,
             data.τ,
             model_formulation,
             degradation;
@@ -451,6 +452,7 @@ function simulate_storage_operation(
             storage,
             simulate_prices,
             simulate_times,
+            binding_end_time,
             data.τ,
             model_formulation,
             degradation;

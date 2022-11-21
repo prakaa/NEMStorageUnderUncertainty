@@ -10,6 +10,7 @@ Build a [`StandardArbitrage`](@ref) model
   * `storage`: [`StorageDevice`](@ref)
   * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
   * `times`: Times to run model for
+  * `binding_end_time`: Binding period end time
   * `τ`: Interval duration in hours
   * `StandardArbitrage`
   * `silent`: default `false`. `true` to suppress solver output
@@ -24,6 +25,7 @@ function _build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
+    binding_end_time::DateTime,
     τ::Float64,
     ::StandardArbitrage,
     ::NoDegradation;
@@ -63,6 +65,7 @@ Build a [`StandardArbitrageThroughputLimit`](@ref) model
   * `storage`: [`StorageDevice`](@ref)
   * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
   * `times`: Times to run model for
+  * `binding_end_time`: Binding period end time
   * `τ`: Interval duration in hours
   * `StandardArbitrageThroughputLimit`: [`StandardArbitrageThroughputLimit`](@ref)
   * `silent`: default `false`. `true` to suppress solver output
@@ -77,6 +80,7 @@ function _build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
+    binding_end_time::DateTime,
     τ::Float64,
     throughput_limit::StandardArbitrageThroughputLimit,
     ::NoDegradation;
@@ -90,12 +94,14 @@ function _build_storage_model(
     model = _initialise_model(;
         silent=silent, time_limit_sec=time_limit_sec, string_names=string_names
     )
-    time_diff = Minute(times[end] - times[1])
-    if time_diff == Minute(0)
-        proportion_of_year = Minute(5) / Minute(60 * 24 * 365)
-    else
-        proportion_of_year = time_diff / Minute(60 * 24 * 365)
-    end
+    time_diff = Minute(times[end] - times[1]) + Minute(5)
+    min_in_year = Minute(60 * 24 * 365)
+    proportion_of_year = time_diff / min_in_year
+    binding_proportion_of_year =
+        (Minute(binding_end_time - times[1]) + Minute(5)) / min_in_year
+    d_binding_max =
+        storage.throughput +
+        throughput_limit.throughput_mwh_per_year * binding_proportion_of_year
     d_max =
         storage.throughput + throughput_limit.throughput_mwh_per_year * proportion_of_year
     @debug "Adding vars"
@@ -109,6 +115,7 @@ function _build_storage_model(
     _add_constraint_initial_throughput!(model, storage, times, τ)
     _add_constraint_throughput_limit!(model, times, d_max)
     if length(times) > 1
+        _add_constraint_binding_throughput_limit!(model, binding_end_time, d_binding_max)
         _add_constraint_intertemporal_soc!(model, storage, times, τ)
         _add_constraint_intertemporal_throughput!(model, times, τ)
     end
@@ -125,6 +132,7 @@ Build a [`ArbitrageThroughputPenalty`](@ref) model
   * `storage`: [`StorageDevice`](@ref)
   * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
   * `times`: Times to run model for
+  * `binding_end_time`: Binding period end time
   * `τ`: Interval duration in hours
   * `throughput_penalty`: [`ArbitrageThroughputPenalty`](@ref)
   * `silent`: default `false`. `true` to suppress solver output
@@ -139,6 +147,7 @@ function _build_storage_model(
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
+    binding_end_time::DateTime,
     τ::Float64,
     throughput_penalty::ArbitrageThroughputPenalty,
     ::NoDegradation;
@@ -187,6 +196,7 @@ The type of model constructed and run is dependent on the `formulation`
   * `storage`: [`StorageDevice`](@ref)
   * `prices`: Energy prices in \$/MW/hr that corresponds to prices at `times`
   * `times`: Times to run model for
+  * `binding_end_time`: Binding period end time
   * `τ`: Interval duration in hours
   * `formulation`: A model formulation ([`StorageModelFormulation`](@ref))
 
@@ -201,6 +211,7 @@ function run_model(
     storage::StorageDevice,
     prices::Vector{<:AbstractFloat},
     times::Vector{DateTime},
+    binding_end_time::DateTime,
     τ::Float64,
     formulation::StorageModelFormulation,
     degradation::DegradationModel;
@@ -214,6 +225,7 @@ function run_model(
         storage,
         prices,
         times,
+        binding_end_time,
         τ,
         formulation,
         degradation;

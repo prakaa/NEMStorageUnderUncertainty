@@ -43,6 +43,7 @@ Maximises storage revenue subject to pro-rata application of throughput limits:
       * `d_max` for a model period is given by (where `d₀` is the initial
         storage device throughput):
         ``d_{max} = d_0 + \frac{t_T - t_1 + 5}{60 \times 24 \times 365} \times d_{limit}``
+      * `d_binding_max` applies a similar limit to the binding period
       * `d_limit` is the throughput limit in MWh/year
   * Revenue is purely defined by the spot price for energy
   * Intertemporal SoC constraints are applied, including from `e₀` (initial SoC of storage
@@ -61,6 +62,7 @@ Maximises storage revenue subject to pro-rata application of throughput limits:
   & e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0\\
   & d_t-d_{t-1} - p_t\tau = 0\\
   & d_1 - d_0 - p_1\tau = 0\\
+  & d_{t_{binding, end}} ≤ d_{binding_{max}} \\
   & d_T ≤ d_{max}\\
 \end{aligned}
 ```
@@ -84,7 +86,7 @@ Maximises storage revenue subject to pro-rata penalisation of throughput/cycling
 
 ```math
 \begin{aligned}
-  \max_{t} \quad & \sum_{t}^{T}{\tau\lambda_t(p_t - q_t)} - \frac{d_T - d_{0}}{d_{\textrm{lifetime}}}e_{\textrm{rated}}c_{\textrm{capital}} \\
+  \max_{t} \quad & \sum_{t=1}^{T}{\tau\lambda_t(p_t - q_t)} - \frac{d_T - d_0}{d_{lifetime}} e_{rated} c_{capital} \\
   \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
   & p_t \geq 0 \\
   & q_t \geq 0 \\
@@ -95,8 +97,8 @@ Maximises storage revenue subject to pro-rata penalisation of throughput/cycling
   & e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0\\
   & d_t-d_{t-1} - p_t\tau = 0\\
   & d_1 - d_0 - p_1\tau = 0\\
-  & d_T ≤ d_{max}\\
 \end{aligned}
+```
 
 # Attributes
 

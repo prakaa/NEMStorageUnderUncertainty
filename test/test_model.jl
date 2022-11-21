@@ -9,6 +9,7 @@ function test_run_model(
     data_path::String,
     start_time::DateTime,
     end_time::DateTime,
+    binding_end_time::DateTime,
     formulation::NEMStorageUnderUncertainty.StorageModelFormulation;
     time_limit_sec::Union{Float64,Nothing}=nothing,
 )
@@ -22,6 +23,7 @@ function test_run_model(
         storage,
         actual.prices,
         actual.times,
+        binding_end_time,
         actual.τ,
         formulation,
         NEMStorageUnderUncertainty.NoDegradation();
@@ -48,13 +50,14 @@ end
     @testset "Test StandardArbitrage" begin
         formulation = NEMStorageUnderUncertainty.StandardArbitrage()
         month_model = test_run_model(
-            bess, test_data_path, test_times[1], test_times[2], formulation
+            bess, test_data_path, test_times[1], test_times[2], test_times[1], formulation
         )
         @test isapprox(JuMP.objective_value(month_model), 171697, atol=0.5)
         interval_model = test_run_model(
             bess,
             test_data_path,
             test_interval_times[1],
+            test_interval_times[2],
             test_interval_times[2],
             formulation,
         )
@@ -72,6 +75,7 @@ end
             test_data_path,
             test_times[1],
             test_times[2],
+            test_times[1],
             formulation;
             time_limit_sec=0.01,
         )
@@ -81,10 +85,24 @@ end
             bess.energy_capacity * 365
         )
         day_model = test_run_model(
-            bess, test_data_path, test_day_times[1], test_day_times[2], formulation
+            bess,
+            test_data_path,
+            test_day_times[1],
+            test_day_times[2],
+            test_day_times[1] + Minute(10),
+            formulation,
         )
         con_ref = JuMP.constraint_by_name(day_model, "throughput_limit")
-        @test isapprox(normalized_rhs(con_ref), bess.energy_capacity + bess.throughput)
+        binding_con_ref = JuMP.constraint_by_name(day_model, "binding_throughput_limit")
+        @test isapprox(
+            normalized_rhs(binding_con_ref),
+            bess.throughput +
+            formulation.throughput_mwh_per_year * (Minute(15) / Minute(60 * 24 * 365)),
+        )
+        @test isapprox(
+            normalized_rhs(con_ref),
+            bess.energy_capacity * (1.0 + 1.0 / 288.0) + bess.throughput,
+        )
         @test value(day_model[:throughput_mwh][end]) ≤
             (bess.energy_capacity * bess.throughput)
         throughputs = Vector(JuMP.value.(day_model[:throughput_mwh]))
@@ -97,6 +115,7 @@ end
             bess,
             test_data_path,
             test_interval_times[1],
+            test_interval_times[2],
             test_interval_times[2],
             formulation,
         )
@@ -119,7 +138,12 @@ end
             tp_lim, cap_cost_per_mwh
         )
         day_model = test_run_model(
-            bess, test_data_path, test_day_times[1], test_day_times[2], formulation
+            bess,
+            test_data_path,
+            test_day_times[1],
+            test_day_times[2],
+            test_day_times[1],
+            formulation,
         )
         vals = Dict()
         discharge_mw = day_model[:discharge_mw]
@@ -136,6 +160,7 @@ end
             bess,
             test_data_path,
             test_interval_times[1],
+            test_interval_times[2],
             test_interval_times[2],
             formulation,
         )
