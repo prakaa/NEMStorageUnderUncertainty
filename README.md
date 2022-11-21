@@ -1,4 +1,5 @@
 # NEMStorageUnderUncertainty
+
 [![CI](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/CI.yml/badge.svg)](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/prakaa/NEMStorageUnderUncertainty/branch/master/graph/badge.svg?token=K14NYRGFPX)](https://codecov.io/gh/prakaa/NEMStorageUnderUncertainty)
 [![Documentation](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/Docs.yml/badge.svg)](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/Docs.yml)
@@ -11,7 +12,11 @@ Case studies using data from the National Electricity Market (NEM). These data i
 - Actual regional prices data from the NEM
 - Forecast regional prices produced by AEMO. Forecasts used in this study include:
   - (30-minute) pre-dispatch
-  - 5-minute pre-dispatch 
+  - 5-minute pre-dispatch
+
+## Documentation
+
+Study terminology and methodology/code documentation can be found in the [documentation](https://prakaa.github.io/NEMStorageUnderUncertainty/).
 
 ## Installation
 
