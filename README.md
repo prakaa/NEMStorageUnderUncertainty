@@ -43,3 +43,9 @@ make get_NEM_data
 This command installs the mini-package located in `data_scripts/`, installs the `get_data.py` script as a console command and then runs the console commanad to obtain the data
 
 - The Makefile assumes Python 3 is installed on your machine.
+
+## Author and Acknowledgements
+
+This modelling framework and its associated case studies were developed by Abhijith (Abi) Prakash, PhD Candidate at the UNSW Collaboration on Energy and Environmental Markets.
+
+Data used in this study were made accessible by [`NEMOSIS`](https://github.com/UNSW-CEEM/NEMOSIS) and [`NEMSEER`](https://github.com/UNSW-CEEM/NEMSEER).
