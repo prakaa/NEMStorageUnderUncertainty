@@ -177,3 +177,25 @@ function _add_constraint_throughput_limit!(
     throughput_mwh = model[:throughput_mwh]
     JuMP.@constraint(model, throughput_limit, throughput_mwh[times[end]] ≤ d_max)
 end
+
+@doc raw"""
+Adds the following constraint to `model`:
+
+``d_{t_{binding, end}} ≤ d_{binding_{max}}``
+
+where ``d_{binding_{max}}`` is supplied
+
+# Arguments
+
+  * `model`: JuMP model
+  * `binding_end`: End of the binding period, DateTime
+  * `d_binding_max`: Throughput limit in MWh, applicable at the end of the binding period
+"""
+function _add_constraint_binding_throughput_limit!(
+    model::JuMP.Model, binding_end::DateTime, d_binding_max::Float64
+)
+    throughput_mwh = model[:throughput_mwh]
+    JuMP.@constraint(
+        model, binding_throughput_limit, throughput_mwh[binding_end] ≤ d_binding_max
+    )
+end
