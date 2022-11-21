@@ -85,7 +85,7 @@ function simulate_actual2021_ArbThroughputPenalty_NoDeg_lookaheads(
         soc₀=0.5 * energy,
         throughput=0.0,
     )
-    @info("BESS $power MW $energy MWh")
+    @info("BESS $power MW $energy MWh cost $capital_cost")
     @info("Simulating perfect foresight")
     d_lifetime = storage.energy_capacity * 365.0 * 10.0
     formulation = NEMStorageUnderUncertainty.ArbitrageThroughputPenalty(
