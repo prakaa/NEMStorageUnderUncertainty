@@ -260,6 +260,9 @@ function _update_storage_state(
 )
     new_soc₀ = binding_results[end, :soc_mwh]
     new_throughput = binding_results[end, :throughput_mwh]
+    if isapprox(new_throughput, storage.throughput; atol=1e-10)
+        new_throughput = storage.throughput
+    end
     return copy(storage, new_soc₀, new_throughput)
 end
 
