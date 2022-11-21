@@ -6,8 +6,8 @@ function Base.copy(x::T, soc₀::Float64, throughput::Float64) where {T<:Storage
     filtered_fields = [f for f ∈ fieldnames(T) if (f != :soc₀ || f != :throughput)]
     return T(;
         Dict(:($k) => getfield(x, k) for k in filtered_fields)...,
-        :soc₀=>soc₀,
-        :throughput=>throughput,
+        :soc₀ => soc₀,
+        :throughput => throughput,
     )
 end
 
@@ -53,11 +53,14 @@ Base.@kwdef struct BESS <: StorageDevice
         if any([cap ≤ 0 for cap in (power_capacity, energy_capacity)])
             throw(DomainError("Capacities should be > 0"))
         end
-        if any([soc < 0 for soc in (soc₀, soc_min, soc_max)])
-            throw(DomainError("SoC values should be ≥ 0"))
+        if any([soc < 0 for soc in (soc_min, soc_max)])
+            throw(DomainError("SoC limits should be ≥ 0"))
+        end
+        if soc₀ < 0
+            throw(DomainError("soc₀ ($(soc₀)) should be ≥ 0"))
         end
         if throughput < 0
-            throw(DomainError("Energy throughput should be ≥ 0"))
+            throw(DomainError("Energy throughput ($(throughput)) should be ≥ 0"))
         end
         if any([soc > energy_capacity for soc in (soc_min, soc_max, soc₀)])
             throw(DomainError("SoC values should be ≤ the BESS energy capacity"))
