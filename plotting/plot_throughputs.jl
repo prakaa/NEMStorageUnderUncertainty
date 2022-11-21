@@ -101,7 +101,7 @@ function plot_throughputs_arbthroughputlimit_nodeg()
     for key in selected
         (data_type, mw) = split(key, "/")
         data_type = uppercasefirst(data_type)
-        title = "100MWh/$(mw) BESS - Throughput Limited - NSW Prices 2021 ($(data_type))"
+        title = "100MWh/$(mw) BESS - TP Limited (100 MWh/day) - NSW Prices 2021 ($(data_type))"
         fig = plot_throughputs(data, key, title)
         int_mw = split(mw, ".")[1]
         save(
@@ -127,12 +127,13 @@ function plot_throughputs_arbthroughputpenalty_nodeg()
             )
         ]
         throughput_penalty = match(r".*_ArbThroughputPenalty([0-9.]*)_.*", file)[1]
-        throughput_penalty = round(Int, parse(Float64, throughput_penalty))
+        throughput_penalty = string(round(Int, parse(Float64, throughput_penalty)))
+        throughput_penalty = throughput_penalty[1:3] * "," * throughput_penalty[4:end]
         for key in selected
             (data_type, mw) = split(key, "/")
             data_type = uppercasefirst(data_type)
             title = (
-                "100MWh/$(mw) BESS - TP Penalty $(throughput_penalty)AUD/MWh - " *
+                "100MWh/$(mw) BESS - TP Penalty $(throughput_penalty) AUD/MWh - " *
                 "NSW Prices 2021 ($(data_type))"
             )
             fig = plot_throughputs(data, key, title)
