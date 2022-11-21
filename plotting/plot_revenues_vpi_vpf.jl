@@ -149,7 +149,11 @@ function plot_value_of_information_and_foresight(
             fillto=fillto,
             strokewidth=1,
         )
-        ylims!(ax, 1.0, nothing)
+        if percentage_of_perfect_foresight
+            ylims!(ax, 1.0, 100.0)
+        else
+            ylims!(ax, 1.0, nothing)
+        end
         # Legend
         lk_lg = [PolyElement(; polycolor=v_pf_colors[i]) for i in 1:length(lookaheads)]
         v_lg = [
@@ -214,24 +218,18 @@ function plot_standardarb_nodeg()
     if !isdir(plot_path)
         mkdir(plot_path)
     end
+    title = "100MWh BESS - Arbitrage - NSW Prices 2021"
     jld2_file = joinpath(
         results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_lookaheads.jld2"
     )
-    abs_revenues = plot_revenues_across_simulations(
-        jld2_file, "100MWh BESS - Arbitrage - NSW Prices 2021"
-    )
+    abs_revenues = plot_revenues_across_simulations(jld2_file, title)
     save(
-        joinpath(
-            plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_revenues_lookaheads.pdf"
-        ),
+        joinpath(plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_revenues_lookaheads.pdf"),
         abs_revenues;
         pt_per_unit=1,
     )
     percentage_revenues = plot_revenues_across_simulations(
-        jld2_file,
-        "100MWh BESS - Arbitrage - NSW Prices 2021",
-        ;
-        percentage_of_perfect_foresight=true,
+        jld2_file, title, ; percentage_of_perfect_foresight=true
     )
     save(
         joinpath(
@@ -242,10 +240,7 @@ function plot_standardarb_nodeg()
         pt_per_unit=1,
     )
     vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file,
-        "100MWh BESS - Arbitrage - NSW Prices 2021",
-        ;
-        percentage_of_perfect_foresight=false,
+        jld2_file, title, ; percentage_of_perfect_foresight=false
     )
     save(
         joinpath(plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_vpf_vpi.pdf"),
@@ -253,15 +248,10 @@ function plot_standardarb_nodeg()
         pt_per_unit=1,
     )
     per_vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file,
-        "100MWh BESS - Arbitrage - NSW Prices 2021",
-        ;
-        percentage_of_perfect_foresight=true,
+        jld2_file, title, ; percentage_of_perfect_foresight=true
     )
     save(
-        joinpath(
-            plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_vpf_vpi.pdf"
-        ),
+        joinpath(plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_vpf_vpi.pdf"),
         per_vpf_vpi;
         pt_per_unit=1,
     )
@@ -274,24 +264,20 @@ function plot_standardarb_throughput_limits()
     if !isdir(plot_path)
         mkdir(plot_path)
     end
+    title = "100MWh BESS - Throughput Limited (100 MWh/day) - NSW Prices 2021"
     jld2_file = joinpath(
         results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2"
     )
-    abs_revenues = plot_revenues_across_simulations(
-        jld2_file, "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021"
-    )
+    abs_revenues = plot_revenues_across_simulations(jld2_file, title)
     save(
         joinpath(
-            plot_path,
-            "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_revenues_lookaheads.pdf",
+            plot_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_revenues_lookaheads.pdf"
         ),
         abs_revenues;
         pt_per_unit=1,
     )
     percentage_revenues = plot_revenues_across_simulations(
-        jld2_file,
-        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
-        percentage_of_perfect_foresight=true,
+        jld2_file, title; percentage_of_perfect_foresight=true
     )
     save(
         joinpath(
@@ -302,9 +288,7 @@ function plot_standardarb_throughput_limits()
         pt_per_unit=1,
     )
     vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file,
-        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
-        percentage_of_perfect_foresight=false,
+        jld2_file, title; percentage_of_perfect_foresight=false
     )
     save(
         joinpath(plot_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_vpf_vpi.pdf"),
@@ -312,18 +296,73 @@ function plot_standardarb_throughput_limits()
         pt_per_unit=1,
     )
     per_vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file,
-        "100MWh BESS - Throughput Limited (100 MWh) - NSW Prices 2021";
-        percentage_of_perfect_foresight=true,
+        jld2_file, title; percentage_of_perfect_foresight=true
     )
     save(
         joinpath(
-            plot_path,
-            "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_vpf_vpi.pdf",
+            plot_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_vpf_vpi.pdf"
         ),
         per_vpf_vpi;
         pt_per_unit=1,
     )
+    return nothing
+end
+
+function plot_standardarb_throughput_penalty()
+    results_path = "simulations/arbitrage_throughputpenalty_no_degradation/results"
+    plot_path = joinpath(results_path, "plots")
+    if !isdir(plot_path)
+        mkdir(plot_path)
+    end
+    for file in [f for f in readdir(results_path) if endswith(f, ".jld2")]
+        jld2_file = joinpath(results_path, file)
+        throughput_penalty = match(r".*_ArbThroughputPenalty([0-9.]*)_.*", file)[1]
+        throughput_penalty = string(round(Int, parse(Float64, throughput_penalty)))
+        throughput_penalty = throughput_penalty[1:3] * "," * throughput_penalty[4:end]
+        title = "100MWh BESS - TP Penalty $(throughput_penalty) AUD/MWh - NSW Prices 2021"
+        abs_revenues = plot_revenues_across_simulations(jld2_file, title)
+        save(
+            joinpath(
+                plot_path,
+                "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_revenues_lookaheads.pdf",
+            ),
+            abs_revenues;
+            pt_per_unit=1,
+        )
+        percentage_revenues = plot_revenues_across_simulations(
+            jld2_file, title; percentage_of_perfect_foresight=true
+        )
+        save(
+            joinpath(
+                plot_path,
+                "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_percentage_revenues_lookaheads.pdf",
+            ),
+            percentage_revenues;
+            pt_per_unit=1,
+        )
+        vpf_vpi = plot_value_of_information_and_foresight(
+            jld2_file, title; percentage_of_perfect_foresight=false
+        )
+        save(
+            joinpath(
+                plot_path,
+                "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_vpf_vpi.pdf",
+            ),
+            vpf_vpi;
+            pt_per_unit=1,
+        )
+        per_vpf_vpi = plot_value_of_information_and_foresight(
+            jld2_file, title; percentage_of_perfect_foresight=true
+        )
+        save(
+            joinpath(
+                plot_path,
+                "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_percentage_vpf_vpi.pdf",
+            ),
+            per_vpf_vpi;
+            pt_per_unit=1,
+        )
+    end
     return nothing
 end
 
@@ -333,7 +372,7 @@ theme = Theme(;
         backgroundcolor="#f0f0f0",
         spinewidth=0,
         xticklabelrotation=45,
-        titlesize=25,
+        titlesize=20,
         titlegap=15,
         titlefont=font,
         xlabelfont=font,
@@ -349,3 +388,4 @@ theme = Theme(;
 set_theme!(theme)
 plot_standardarb_nodeg()
 plot_standardarb_throughput_limits()
+plot_standardarb_throughput_penalty()
