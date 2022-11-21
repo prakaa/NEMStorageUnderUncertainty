@@ -309,9 +309,11 @@ end
                 results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
             )
             test_index = rand(test_indices)
-            @test results[test_index + 1, :throughput_mwh] ==
+            @test isapprox(
+                results[test_index + 1, :throughput_mwh],
                 results[test_index, :throughput_mwh] +
-                  results[test_index + 1, :discharge_mw] * actual_data.τ
+                results[test_index + 1, :discharge_mw] * actual_data.τ,
+            )
             calc_soc = (
                 results[test_index, :soc_mwh] +
                 results[test_index + 1, :charge_mw] * storage.η_charge * actual_data.τ -
@@ -466,9 +468,11 @@ end
                 results[2:end, :decision_time] - results[1:(end - 1), :decision_time],
             )
             test_index = rand(test_indices)
-            @test results[test_index + 1, :throughput_mwh] ==
+            @test isapprox(
+                results[test_index + 1, :throughput_mwh],
                 results[test_index, :throughput_mwh] +
-                  results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ
+                results[test_index + 1, :discharge_mw] * aligned_forecast_data.τ,
+            )
             calc_soc = (
                 results[test_index, :soc_mwh] +
                 results[test_index + 1, :charge_mw] *
