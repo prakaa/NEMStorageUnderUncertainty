@@ -6,13 +6,13 @@ All price data is in AUD/MW/hr.
 
 ### Forecast
 
-*Forecast* data refers to price data compiled from 30-minute pre-dispatch (`PD`, or `PREDISPATCH`) and 5-minute pre-dispatch (`P5MIN` or `5MPD`) forecasts. 
+*Forecast* data refers to price data compiled from 30-minute pre-dispatch (`PD`, or `PREDISPATCH`) and 5-minute pre-dispatch (`P5MIN` or `5MPD`) forecasts.
 
 30-minute pre-dispatch forecasts run half an hour and one hour prior to real-time (*actual* run time) are removed as they overlap with the `P5MIN` horizon.
 
 ### Actual
 
-*Actual* price data, which refers to cleared prices for a region as published by AEMO.
+*Actual* price data refers to cleared prices for a region as published by AEMO.
 
 ## Simulation Components and Periods
 
@@ -33,6 +33,10 @@ Models are characterised by:
 A *simulation* is a rolling horizon optimal control problem in which:
 
   1. At the decision time, initial storage state and price data are inputs into a model of the first lookahead horizon
-  2. The model is solved and certain decisions are binding
+  2. The model is solved, and certain decisions are considered binding
   3. The next decision time is the last binding interval. The storage state is updated, the lookahead horizon is rolled along, and another model is constructed and solved
   4. This is repeated until the entire simulation period has been simulated
+  
+  In the example below, a simulation consists of models with a lookahead horizon of 3 and a binding horizon of 1:
+  
+  ![Example of simulation with a lookahead horizon of 3 and a binding horizon of 1](sim_example.png)
