@@ -36,7 +36,11 @@ A *simulation* is a rolling horizon optimal control problem in which:
   2. The model is solved, and certain decisions are considered binding
   3. The next decision time is the last binding interval. The storage state is updated, the lookahead horizon is rolled along, and another model is constructed and solved
   4. This is repeated until the entire simulation period has been simulated
+
+Simulations can be run with actual price data, or with forecast price data.
+
+Results from simulations can be compared to a *perfect foresight* model, in which all intervals are optimised simultaneously using actual price data.
   
-  In the example below, a simulation consists of models with a lookahead horizon of 3 and a binding horizon of 1:
+In the example below, simulations and a perfect foresight model are run from `t` to `t+10`. Each simulation consists of models with a lookahead horizon of 3 and a binding horizon of 1. The perfect foresight model optimises storage device operation over the entire data period.
   
-  ![Example of simulation with a lookahead horizon of 3 and a binding horizon of 1](sim_example.png)
+![Example of simulation with a lookahead horizon of 3 and a binding horizon of 1](sim_example.png)
