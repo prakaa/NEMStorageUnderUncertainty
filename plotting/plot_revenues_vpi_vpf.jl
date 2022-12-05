@@ -133,7 +133,7 @@ function plot_value_of_information_and_foresight(
         barplot!(
             ax,
             xs,
-            plot_data.v_pf;
+            plot_data.v_pf .* -1;
             dodge=groups,
             color=v_pf_colors[groups],
             fillto=fillto,
@@ -143,16 +143,16 @@ function plot_value_of_information_and_foresight(
         barplot!(
             ax,
             xs,
-            plot_data.v_pi;
+            plot_data.v_pi .* -1;
             dodge=groups,
             color=:transparent,
             fillto=fillto,
             strokewidth=1,
         )
         if percentage_of_perfect_foresight
-            ylims!(ax, 1.0, 100.0)
+            ylims!(ax, -100.0, -1.0)
         else
-            ylims!(ax, 1.0, nothing)
+            ylims!(ax, nothing, -1.0)
         end
         # Legend
         lk_lg = [PolyElement(; polycolor=v_pf_colors[i]) for i in 1:length(lookaheads)]
@@ -204,9 +204,9 @@ function plot_value_of_information_and_foresight(
     )
     scale = identity
     if percentage_of_perfect_foresight
-        ylabel = "Value (% of perfect foresight revenue)"
+        ylabel = "Revenue reduction (% of perfect foresight revenue)"
     else
-        ylabel = "Value (AUD)"
+        ylabel = "Revenue reduction (AUD)"
     end
     fig = _makie_plot(plot_data, title, ylabel, scale, 0.0)
     return fig
@@ -237,14 +237,6 @@ function plot_standardarb_nodeg()
             "NSW_100.0MWh_StandardArb_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
         percentage_revenues;
-        pt_per_unit=1,
-    )
-    vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file, title, ; percentage_of_perfect_foresight=false
-    )
-    save(
-        joinpath(plot_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_vpf_vpi.pdf"),
-        vpf_vpi;
         pt_per_unit=1,
     )
     per_vpf_vpi = plot_value_of_information_and_foresight(
@@ -285,14 +277,6 @@ function plot_standardarb_throughput_limits()
             "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_percentage_revenues_lookaheads.pdf",
         ),
         percentage_revenues;
-        pt_per_unit=1,
-    )
-    vpf_vpi = plot_value_of_information_and_foresight(
-        jld2_file, title; percentage_of_perfect_foresight=false
-    )
-    save(
-        joinpath(plot_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_vpf_vpi.pdf"),
-        vpf_vpi;
         pt_per_unit=1,
     )
     per_vpf_vpi = plot_value_of_information_and_foresight(
@@ -338,17 +322,6 @@ function plot_standardarb_throughput_penalty()
                 "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_percentage_revenues_lookaheads.pdf",
             ),
             percentage_revenues;
-            pt_per_unit=1,
-        )
-        vpf_vpi = plot_value_of_information_and_foresight(
-            jld2_file, title; percentage_of_perfect_foresight=false
-        )
-        save(
-            joinpath(
-                plot_path,
-                "NSW_100.0MWh_ArbThroughputPenalty$(throughput_penalty)_NoDeg_2021_vpf_vpi.pdf",
-            ),
-            vpf_vpi;
             pt_per_unit=1,
         )
         per_vpf_vpi = plot_value_of_information_and_foresight(

@@ -32,7 +32,7 @@ function plot_throughputs(data::Dict{String,Any}, sim::String, title::String)
     @assert sim in tp_data.sim
     sim_data = filter(:sim => x -> x == sim, tp_data)
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
-    ax = Axis(fig[1, 1]; title=title, ylabel="Throughput (MWh)")
+    ax = Axis(fig[1, 1]; title=title, ylabel="Cumulative Throughput (MWh)")
     lookaheads = unique(sim_data.lookahead_minutes)
     colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
     for (i, lk) in enumerate(lookaheads)
