@@ -5,7 +5,7 @@
 #PBS -M abi.prakash@unsw.edu.au
 #PBS -m ae
 
-module add julia/1.7.3
+module add julia/1.8.2-ilp64
 julia -e 'using Pkg;Pkg.activate("NEMStorageUnderUncertainty");Pkg.instantiate()'
 julia --project="NEMStorageUnderUncertainty" -- NEMStorageUnderUncertainty/simulations/arbitrage_throughputlimited_no_degradation/simulate_forecast.jl $power $energy
 echo "Submitted ArbThroughputLimited Forecast $power MW $energy MWh"
