@@ -1,7 +1,13 @@
 @doc raw"""
-Adds two constraints to `model`:
+Constraints that explicitly prevent simultaneous charging and discharging during a
+time interval ``t``. Adds two constraints to `model`:
   * ``p_t - \bar{p}\left(1-u_t\right) \leq 0``
   * ``q_t - \bar{p}u_t \leq 0``
+
+In the absence of these constraints, simultaneous charging and
+discharging was observed for a BESS device simulated for the following model formulations:
+  * [`StandardArbitrage`](@ref)
+  * [`StandardArbitrageThroughputPenalty`](@ref), up to a certain throughput penalty
 
 # Arguments
 
@@ -27,6 +33,8 @@ function _add_constraints_charge_state!(
 end
 
 @doc raw"""
+Initial state of charge constraint that uses `soc₀` from `storage`.
+
 Adds the following constraint to `model`:
 
 ``e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0``
@@ -60,6 +68,8 @@ function _add_constraint_initial_soc!(
 end
 
 @doc raw"""
+Intertemporal state of charge constraints that describe state of charge evolution.
+
 Adds the following constraint to `model` if `times` has length ≥ 2:
 
 ``e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0``
@@ -99,6 +109,8 @@ function _add_constraint_intertemporal_soc!(
 end
 
 @doc raw"""
+Initial throughput constraint that uses `throughput₀` from `storage`.
+
 Adds the following constraint to `model`:
 
 ``d_1 - d_0 - p_1\tau = 0``
@@ -128,6 +140,9 @@ function _add_constraint_initial_throughput!(
 end
 
 @doc raw"""
+Intertemporal throughput constraints that track throughput.
+See [`_add_variable_throughput!`](@ref).
+
 Adds the following constraint to `model` if `times` has length ≥ 2:
 
 ``d_t-d_{t-1} - p_t\tau = 0``
@@ -159,6 +174,8 @@ function _add_constraint_intertemporal_throughput!(
 end
 
 @doc raw"""
+Adds a throughput limit constraint that applies to the final time period in a simulation.
+
 Adds the following constraint to `model`:
 
 ``d_{end} ≤ d_{max}``
@@ -179,6 +196,9 @@ function _add_constraint_throughput_limit!(
 end
 
 @doc raw"""
+Adds a throughput limit constraint that applies to the final *binding* time period in a
+simulation.
+
 Adds the following constraint to `model`:
 
 ``d_{t_{binding, end}} ≤ d_{binding_{max}}``

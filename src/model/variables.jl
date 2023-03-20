@@ -45,7 +45,7 @@ function _add_variable_soc!(
 end
 
 @doc raw"""
-Adds binary variable that indicates charging (i.e. ``u_t=1``) when charging.
+Adds binary variable that indicates when the device is charging (i.e. ``u_t=1``).
 
 # Arguments
 
@@ -59,6 +59,7 @@ end
 @doc raw"""
 Adds variable that tracks throughput in MWh (``d_t``).
 
+Throughput is defined as the cumulative energy delivered (i.e. discharged) by the device.
 
 The following variable bound is applied: ``d_0 \leq d_t``, where
 the limit represents the initial throughput obtained from `storage`.

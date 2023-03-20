@@ -16,11 +16,11 @@ simulation parameters.
 
 1. `decision_interval`: `data.times` indices that correspond to decision points
 2. `binding_start`: `data.times` indices that correspond to the first
-   binding period for each simulation.
+   binding period for each model period.
 3. `binding_end`: `data.times` indices that correspond to the last
-   binding period for each simulation.
+   binding period for each model period.
 4. `horizon_end`: `data.times` indices that correspond to the horizon end for
-   each simulation
+   model period.
 
 """
 function _get_periods_for_simulation(
@@ -106,11 +106,11 @@ simulation parameters.
 
 1. `decision_interval`: `data.times` indices that correspond to `run_time` decision points
 2. `binding_start`: `data.times` indices that correspond to the first
-   binding period for each simulation. Applies to `forecasted_time`.
+   binding period for each model period. Applies to `forecasted_time`.
 3. `binding_end`: `data.times` indices that correspond to the last
-   binding period for each simulation. Applies to `forecasted_time`
+   binding period for each model period. Applies to `forecasted_time`
 4. `horizon_end`: `data.times` indices that correspond to the horizon end for
-   each simulation. Applies to `forecasted_time`
+   each model period. Applies to `forecasted_time`.
 
 """
 function _get_periods_for_simulation(
@@ -219,6 +219,21 @@ function _get_periods_for_simulation(
     return period_data
 end
 
+"""
+Retrieves binding and non-binding results from model `m` as `DataFrame`s.
+
+# Arguments
+
+  * `m`: A JuMP model with results
+  * `decision_time`: The decision time of model period.
+  * `binding_start`: The first interval for which decisions are binding.
+  * `binding_end`: The last interval for which decisions are binding.
+
+# Returns
+
+(`DataFrame` with non-binding decisions, `DataFrame` with binding decisions)
+
+"""
 function _retrieve_results(
     m::JuMP.Model, decision_time::DateTime, binding_start::DateTime, binding_end::DateTime
 )
