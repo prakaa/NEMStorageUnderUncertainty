@@ -13,9 +13,10 @@ using DataFrames
 using Dates
 using Impute: Impute
 using JuMP: JuMP
+using JLD2
 using Logging
 using ProgressMeter
-using JLD2
+using Statistics
 
 #DocStringExtensions Templates
 using DocStringExtensions
@@ -49,5 +50,7 @@ include("model/build_and_run.jl")
 include("simulations.jl")
 ## Utilities
 include("simulation_utils.jl")
+## Results
+include("results.jl")
 
 end
