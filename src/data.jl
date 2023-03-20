@@ -158,7 +158,7 @@ Specifically, this involves:
   - Forward filling `run_time`
     - Latest forecast should be used until a new forecast is run
     - e.g. prices from run at 13:30 are used for 13:35, 13:40 ... 13:55
-    - We then ened to remove periods when `run_time` < `forecasted_time`
+    - We then need to remove periods when `run_time` < `forecasted_time`
 
 Imputation is carried out using `Impute.jl`.
 
