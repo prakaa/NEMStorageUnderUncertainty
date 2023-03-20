@@ -125,7 +125,8 @@ function simulate_actual2021_ArbThroughputPenalty_NoDeg_lookaheads(
         joinpath(
             @__DIR__,
             "results",
-            "NSW_$(energy)MWh_ArbThroughputPenalty$(capital_cost)_NoDeg_2021_lookaheads.jld2",
+            ("NSW_$(energy)MWh_ArbThroughputPenalty_"
+             * "param$(capital_cost)_NoDeg_2021_lookaheads.jld2"),
         ),
         "actual",
         "$(power)MW",
