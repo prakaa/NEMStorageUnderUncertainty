@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/CI.yml/badge.svg)](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/prakaa/NEMStorageUnderUncertainty/branch/master/graph/badge.svg?token=K14NYRGFPX)](https://codecov.io/gh/prakaa/NEMStorageUnderUncertainty)
-[![Documentation](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/Docs.yml/badge.svg)](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/Docs.yml)
+[![Documentation](https://github.com/prakaa/NEMStorageUnderUncertainty/actions/workflows/Docs.yml/badge.svg)](https://prakaa.github.io/NEMStorageUnderUncertainty/dev/)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
 Modelling to investigate how imperfect foresight and information (via actual and forecast energy prices) affects storage operation. 
