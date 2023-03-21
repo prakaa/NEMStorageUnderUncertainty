@@ -107,8 +107,8 @@ Simulation results (`data`) are saved in `results_file/group/key`
 # Arguments
 
   * `results_file`: Path to file, including `.jld2` extension
-  * `group`: Data group, typically `actual` or `forecast`
-  * `key`: Dataset key, typically storage power capacity
+  * `group`: Data group - `actual` or `forecast`
+  * `key`: Dataset key - storage power capacity
   * `data`: Simulation results DataFrame
 """
 function results_to_jld2(results_file::String, group::String, key::String, data::DataFrame)
