@@ -2,18 +2,6 @@ using Dates, DataFrames
 using NEMStorageUnderUncertainty
 using CairoMakie
 using JLD2
-using Statistics
-
-function _sort_bess_capacities(data::DataFrame)
-    for cap in ("12.5MW", "25.0MW", "50.0MW")
-        data[:, :sim] = replace.(data[:, :sim], cap => lpad(cap, 7, "0"))
-    end
-    sort!(data, :sim)
-    for cap in ("012.5MW", "025.0MW", "050.0MW")
-        data[:, :sim] = replace.(data[:, :sim], cap => cap[2:end])
-    end
-    return data
-end
 
 function _get_throughput_data(data::Dict{String,Any})
     throughput_data = DataFrame[]
@@ -26,146 +14,160 @@ function _get_throughput_data(data::Dict{String,Any})
     return vcat(throughput_data...)
 end
 
-function plot_throughputs(data::Dict{String,Any}, sim::String, title::String)
+"""
+Plots throughputs for each lookahead across the year.
+
+Each figure is composed of 3 axes, each of which plots a particular device power rating
+(specified in `selected_sims`).
+
+# Arguments
+  * `data`: Data as loaded from JLD2 file for a particular simulations
+  * `selected_sims`: Selected simulations (and hence power ratings)
+  * `title`: Title for figure
+
+# Returns
+
+Makie `Figure`
+"""
+function _plot_throughputs(
+    data::Dict{String,Any}, selected_sims::Vector{String}, title::String
+)
+    @assert length(selected_sims) == 3
     tp_data = _get_throughput_data(data)
-    tp_data = _sort_bess_capacities(tp_data)
-    @assert sim in tp_data.sim
-    sim_data = filter(:sim => x -> x == sim, tp_data)
+    @assert all([sim in tp_data.sim for sim in selected_sims])
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
-    ax = Axis(fig[1, 1]; title=title, ylabel="Cumulative Throughput (MWh)")
-    lookaheads = unique(sim_data.lookahead_minutes)
-    colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
-    for (i, lk) in enumerate(lookaheads)
-        label = replace("$lk", "526500" => "Perfect Foresight")
-        plot_df = filter(:lookahead_minutes => x -> x == lk, sim_data)
-        lines!(ax, plot_df.throughput_mwh; label=label, color=colors[i])
+    n = 0
+    (elements, labels, axes) = (Lines[], String[], Axis[])
+    for sim in selected_sims
+        sim_data = filter(:sim => x -> x == sim, tp_data)
+        (data_type, mw) = split(sim, "/")
+        data_type = uppercasefirst(data_type)
+        ax = Axis(fig[1, n]; title="$(mw)")
+        lookaheads = unique(sim_data.lookahead_minutes)
+        colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
+        for (i, lk) in enumerate(lookaheads)
+            label = replace("$lk", "526500" => "Perfect Foresight")
+            plot_df = filter(:lookahead_minutes => x -> x == lk, sim_data)
+            l = lines!(ax, plot_df.throughput_mwh; color=colors[i])
+            push!(elements, l)
+            push!(labels, label)
+        end
+        xticks = unique(sim_data.simulated_time)
+        month_start_index = [findfirst(x -> month(x) == i, xticks) for i in 1:12]
+        month_start_label = [monthname(Date(xticks[x])) for x in month_start_index]
+        ax.xticks = (month_start_index, month_start_label)
+        ax.xticklabelrotation = π / 2
+        l = lines!(ax, fill(100.0 * 365, length(xticks)); color=:red, linestyle=:dot)
+        push!(elements, l)
+        push!(labels, "1 cycle per day")
+        push!(axes, ax)
+        n += 1
     end
-    xticks = unique(sim_data.simulated_time)
-    lines!(
-        ax,
-        fill(100.0 * 365, length(xticks));
-        color=:red,
-        linestyle=:dot,
-        label="1 cycle per day",
+    Legend(
+        fig[2, 1],
+        elements[1:10],
+        labels[1:10],
+        "Lookaheads (minutes)";
+        framevisible=false,
+        patchcolor="#f0f0f0",
+        orientation=:horizontal,
+        nbanks=2,
+        valign=:center,
     )
-    fig[1, 2] = Legend(
-        fig, ax, "Lookaheads\n(minutes)"; framevisible=false, patchcolor="#f0f0f0"
-    )
-    month_start_index = [findfirst(x -> month(x) == i, xticks) for i in 1:12]
-    month_start_label = [string(Date(xticks[x])) for x in month_start_index]
-    ax.xticks = (month_start_index, month_start_label)
-    ax.xticklabelrotation = π / 4
+    linkaxes!(axes...)
+    Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
+    fig.content[1].ylabel = "Cumulative Throughput (MWh)"
+    trim!(fig.layout)
     return fig
 end
 
-function plot_throughputs_arb_nodeg()
-    results_path = "simulations/arbitrage_no_degradation/results"
-    plot_path = joinpath(results_path, "plots")
-    if !isdir(plot_path)
-        mkdir(plot_path)
-    end
-    jld2_file = joinpath(results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021.jld2")
-    data = load(jld2_file)
-    selected = [
-        key for key in keys(data) if
-        (contains(key, "forecast") & any(contains.(key, ["25.0MW", "100.0MW", "400.0MW"])))
-    ]
-    for key in selected
-        (data_type, mw) = split(key, "/")
-        data_type = uppercasefirst(data_type)
-        title = "100MWh/$(mw) BESS - Arbitrage - NSW Prices 2021 ($(data_type))"
-        fig = plot_throughputs(data, key, title)
-        int_mw = split(mw, ".")[1]
-        save(
-            joinpath(plot_path, "NSW_100MWh$(int_mw)MW_throughputs.pdf"), fig; pt_per_unit=1
-        )
-    end
-end
+"""
+Wrapper function that plots throughput charts for all simulated formulations
 
-function plot_throughputs_arbthroughputlimit_nodeg()
-    results_path = "simulations/arbitrage_throughputlimited_no_degradation/results"
-    plot_path = joinpath(results_path, "plots")
-    if !isdir(plot_path)
-        mkdir(plot_path)
-    end
-    jld2_file = joinpath(results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021.jld2")
-    data = load(jld2_file)
-    selected = [
-        key for key in keys(data) if
-        (contains(key, "forecast") & any(contains.(key, ["25.0MW", "100.0MW", "400.0MW"])))
-    ]
-    for key in selected
-        (data_type, mw) = split(key, "/")
-        data_type = uppercasefirst(data_type)
-        title = "100MWh/$(mw) BESS - TP Limited (100 MWh/day) - NSW Prices 2021 ($(data_type))"
-        fig = plot_throughputs(data, key, title)
-        int_mw = split(mw, ".")[1]
-        save(
-            joinpath(plot_path, "NSW_100MWh$(int_mw)MW_throughputs.pdf"), fig; pt_per_unit=1
-        )
-    end
-end
+# Arguments
+  * `sim_folder`: Folder with simulated formulations and results
+  * `selected_sims`: Selected simulations to plot. Should correspond to keys in JLD2 files
 
-function plot_throughputs_arbthroughputpenalty_nodeg()
-    results_path = "simulations/arbitrage_throughputpenalty_no_degradation/results"
-    plot_path = joinpath(results_path, "plots")
-    if !isdir(plot_path)
-        mkdir(plot_path)
-    end
-    files = [f for f in readdir(results_path) if endswith(f, ".jld2")]
-    for file in files
-        jld2_file = joinpath(results_path, file)
-        data = load(jld2_file)
-        selected = [
-            key for key in keys(data) if (
-                contains(key, "forecast") &
-                any(contains.(key, ["25.0MW", "100.0MW", "400.0MW"]))
-            )
-        ]
-        throughput_penalty = match(r".*_ArbThroughputPenalty([0-9.]*)_.*", file)[1]
-        throughput_penalty = string(round(Int, parse(Float64, throughput_penalty)))
-        throughput_penalty = throughput_penalty[1:3] * "," * throughput_penalty[4:end]
-        for key in selected
-            (data_type, mw) = split(key, "/")
-            data_type = uppercasefirst(data_type)
+"""
+function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
+    function _plot_formulation(
+        data::Dict{String,Any},
+        formulation::String,
+        file::String,
+        selected_sims::Vector{String},
+        state::String,
+        param::Union{String,Nothing}=nothing,
+    )
+        title_map = Dict(
+            "arbitrage_no_degradation" => "Arbitrage",
+            "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",
+            "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
+        )
+        energy = parse(Float64, match(r"[A-Z]{2,3}_([0-9\.]*)MWh.*", file).captures[])
+        energy = convert(Int64, energy)
+        if isnothing(param)
             title = (
-                "100MWh/$(mw) BESS - TP Penalty $(throughput_penalty) AUD/MWh - " *
-                "NSW Prices 2021 ($(data_type))"
+                "$energy MWh BESS - " *
+                title_map[formulation] *
+                "- $state Prices 2021 (Forecast)"
             )
-            fig = plot_throughputs(data, key, title)
-            int_mw = split(mw, ".")[1]
-            save(
-                joinpath(
-                    plot_path,
-                    "NSW_$(throughput_penalty)AUDpMWh_100MWh$(int_mw)MW_throughputs.pdf",
-                ),
-                fig;
-                pt_per_unit=1,
+        else
+            title = (
+                "$energy MWh BESS - " *
+                title_map[formulation] *
+                " $param AUD/MWh " *
+                "- $state Prices 2021 (Forecast)"
             )
         end
+        fig = _plot_throughputs(data, selected_sims, title)
+        return fig, energy
     end
+
+    save_path = joinpath("results", "plots", "throughput")
+    if !isdir(save_path)
+        mkpath(save_path)
+    end
+    categorisation = NEMStorageUnderUncertainty._categorise_simulation_results(sim_folder)
+    for state in keys(categorisation)
+        formulation_results = categorisation[state]
+        for (formulation, results) in pairs(formulation_results)
+            results_path = joinpath(sim_folder, formulation, "results")
+            if length(results) == 1
+                file = results[]
+                data = load(joinpath(results_path, file))
+                fig, energy = _plot_formulation(
+                    data, formulation, file, selected_sims, state
+                )
+                save(
+                    joinpath(
+                        save_path, "$(state)_$(energy)_$(formulation)_throughputs.pdf"
+                    ),
+                    fig;
+                    pt_per_unit=1,
+                )
+            else
+                for file in results
+                    data = load(joinpath(results_path, file))
+                    param = parse(Float64, match(r".*_param(.*)_NoDeg.*", file).captures[])
+                    param = convert(Int64, param)
+                    fig, energy = _plot_formulation(
+                        data, formulation, file, selected_sims, state, string(param)
+                    )
+                    save(
+                        joinpath(
+                            save_path,
+                            "$(state)_$(energy)_$(formulation)_$(param)_throughputs.pdf",
+                        ),
+                        fig;
+                        pt_per_unit=1,
+                    )
+                end
+            end
+        end
+    end
+    return nothing
 end
 
-font = "Source Sans Pro"
-theme = Theme(;
-    Axis=(
-        backgroundcolor="#f0f0f0",
-        spinewidth=0,
-        xticklabelrotation=45,
-        titlesize=20,
-        titlegap=15,
-        titlefont=font,
-        xlabelfont=font,
-        ylabelfont=font,
-        ylabelsize=18,
-        xticklabelfont=font,
-        xticklabelsize=16,
-        yticklabelfont=font,
-        yticklabelsize=14,
-    ),
-    Legend=(titlefont=font, labelfont=font, labelsize=14),
-)
-set_theme!(theme)
-plot_throughputs_arb_nodeg()
-plot_throughputs_arbthroughputlimit_nodeg()
-plot_throughputs_arbthroughputpenalty_nodeg()
+NEMStorageUnderUncertainty.set_project_plot_theme!()
+selected_sims = ["forecast/25.0MW", "forecast/100.0MW", "forecast/400.0MW"]
+plot_all_throughputs("simulations", selected_sims)
