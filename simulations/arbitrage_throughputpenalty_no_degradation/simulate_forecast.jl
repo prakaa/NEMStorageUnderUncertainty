@@ -60,7 +60,7 @@ end
 """
 N.B. capital_cost should be in AUD/MWh
 """
-function simulate_forecast2021_ArbThroughputPenalty_NoDeg_lookaheads(
+function simulate_forecast2021_ArbThroughputPenalty_NoDeg(
     power::Float64, energy::Float64, capital_cost::Float64
 )
     if !isdir(joinpath(@__DIR__, "results"))
@@ -137,8 +137,10 @@ function simulate_forecast2021_ArbThroughputPenalty_NoDeg_lookaheads(
         joinpath(
             @__DIR__,
             "results",
-            ("NSW_$(energy)MWh_ArbThroughputPenalty_"
-             * "param$(capital_cost)_NoDeg_2021_lookaheads.jld2"),
+            (
+                "NSW_$(energy)MWh_ArbThroughputPenalty_" *
+                "param$(capital_cost)_NoDeg_2021.jld2"
+            ),
         ),
         "forecast",
         "$(power)MW",
@@ -149,4 +151,4 @@ end
 
 @assert !isempty(ARGS) "Provide power and energy capacity and capital cost (AUD/MWH) as arguments (in that order)"
 args = parse.(Float64, ARGS)
-simulate_forecast2021_ArbThroughputPenalty_NoDeg_lookaheads(args[1], args[2], args[3])
+simulate_forecast2021_ArbThroughputPenalty_NoDeg(args[1], args[2], args[3])

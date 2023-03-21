@@ -64,9 +64,7 @@ function plot_throughputs_arb_nodeg()
     if !isdir(plot_path)
         mkdir(plot_path)
     end
-    jld2_file = joinpath(
-        results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021_lookaheads.jld2"
-    )
+    jld2_file = joinpath(results_path, "NSW_100.0MWh_StandardArb_NoDeg_2021.jld2")
     data = load(jld2_file)
     selected = [
         key for key in keys(data) if
@@ -90,9 +88,7 @@ function plot_throughputs_arbthroughputlimit_nodeg()
     if !isdir(plot_path)
         mkdir(plot_path)
     end
-    jld2_file = joinpath(
-        results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2"
-    )
+    jld2_file = joinpath(results_path, "NSW_100.0MWh_ArbThroughputLimits_NoDeg_2021.jld2")
     data = load(jld2_file)
     selected = [
         key for key in keys(data) if

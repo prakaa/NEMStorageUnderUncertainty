@@ -51,7 +51,7 @@ function simulate(
     return results
 end
 
-function simulate_actual2021_StandardArb_NoDeg_lookaheads(power::Float64, energy::Float64)
+function simulate_actual2021_StandardArb_NoDeg(power::Float64, energy::Float64)
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
@@ -111,9 +111,7 @@ function simulate_actual2021_StandardArb_NoDeg_lookaheads(power::Float64, energy
         df, all_actual_data, actual_data.τ
     )
     return NEMStorageUnderUncertainty.results_to_jld2(
-        joinpath(
-            @__DIR__, "results", "NSW_$(energy)MWh_StandardArb_NoDeg_2021_lookaheads.jld2"
-        ),
+        joinpath(@__DIR__, "results", "NSW_$(energy)MWh_StandardArb_NoDeg_2021.jld2"),
         "actual",
         "$(power)MW",
         df,
@@ -122,4 +120,4 @@ end
 
 @assert !isempty(ARGS) "Provide power and energy capacity as arguments (in that order)"
 power_and_energy = parse.(Float64, ARGS)
-simulate_actual2021_StandardArb_NoDeg_lookaheads(power_and_energy[1], power_and_energy[2])
+simulate_actual2021_StandardArb_NoDeg(power_and_energy[1], power_and_energy[2])

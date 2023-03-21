@@ -53,9 +53,7 @@ function simulate(
     return results
 end
 
-function simulate_actual2021_ArbThroughputLimits_NoDeg_lookaheads(
-    power::Float64, energy::Float64
-)
+function simulate_actual2021_ArbThroughputLimits_NoDeg(power::Float64, energy::Float64)
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
@@ -116,9 +114,7 @@ function simulate_actual2021_ArbThroughputLimits_NoDeg_lookaheads(
     )
     return NEMStorageUnderUncertainty.results_to_jld2(
         joinpath(
-            @__DIR__,
-            "results",
-            "NSW_$(energy)MWh_ArbThroughputLimits_NoDeg_2021_lookaheads.jld2",
+            @__DIR__, "results", "NSW_$(energy)MWh_ArbThroughputLimits_NoDeg_2021.jld2"
         ),
         "actual",
         "$(power)MW",
@@ -128,6 +124,4 @@ end
 
 @assert !isempty(ARGS) "Provide power and energy capacity as arguments (in that order)"
 power_and_energy = parse.(Float64, ARGS)
-simulate_actual2021_ArbThroughputLimits_NoDeg_lookaheads(
-    power_and_energy[1], power_and_energy[2]
-)
+simulate_actual2021_ArbThroughputLimits_NoDeg(power_and_energy[1], power_and_energy[2])
