@@ -185,7 +185,7 @@ simulated formulation.
 `Dict` mapping each state to `DataFrame` with VPI and VPF for each formulation and
 lookahead.
 """
-function calculate_vpi_vpf_across_scenarios(sim_folder::String)
+function calculate_summaries_and_vpi_vpf_across_scenarios(sim_folder::String)
     function _calculate_summary_vpi_vpf_for_formulation(
         sim_folder::String,
         formulation::String,
@@ -208,7 +208,7 @@ function calculate_vpi_vpf_across_scenarios(sim_folder::String)
     categorisation = _categorise_simulation_results(sim_folder)
     states_vpi_vpf = Dict{String,DataFrame}()
     for state in keys(categorisation)
-        summary_data = Dict{String, DataFrame}()
+        summary_data = Dict{String,DataFrame}()
         vpi_vpf_data = DataFrame[]
         formulation_results = categorisation[state]
         for (formulation, results) in pairs(formulation_results)
@@ -243,7 +243,7 @@ function calculate_vpi_vpf_across_scenarios(sim_folder::String)
         jldopen(summary_file_name, "w"; compress=true) do f
             for (key, value) in pairs(summary_data)
                 f[key] = value
-        end
+            end
         end
         state_vpi_vpf = vcat(vpi_vpf_data...)
         @info "Saving VPI and VPF data for $state"
