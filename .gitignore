@@ -15,4 +15,4 @@ data_scripts/NEMSUU_venv
 data/*
 
 # simulation results
-*.jld2
+simulations/**/*.jld2
