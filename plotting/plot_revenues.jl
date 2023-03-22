@@ -108,6 +108,6 @@ end
 NEMStorageUnderUncertainty.set_project_plot_theme!()
 for percentage_of_perfect_foresight in (false, true)
     plot_revenues_across_formulations(
-        "results/data", percentage_of_perfect_foresight, plot_path
+        joinpath("results", "data"), percentage_of_perfect_foresight, plot_path
     )
 end
