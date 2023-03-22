@@ -60,7 +60,6 @@ function simulate_forecast2021_StandardArb_NoDeg(power::Float64, energy::Float64
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
-    optimizer = set_optimizer()
     lookaheads = [
         Minute(5),
         Minute(15),
@@ -94,7 +93,7 @@ function simulate_forecast2021_StandardArb_NoDeg(power::Float64, energy::Float64
     @info("BESS $power MW $energy MWh")
     @info("Simulating perfect foresight")
     perfect_foresight_result = NEMStorageUnderUncertainty.run_perfect_foresight(
-        optimizer,
+        optimizer_with_attributes(HiGHS.Optimizer, "threads" => 20),
         storage,
         actual_data,
         NEMStorageUnderUncertainty.StandardArbitrage(),

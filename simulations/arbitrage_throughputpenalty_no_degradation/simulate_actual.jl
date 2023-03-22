@@ -61,7 +61,6 @@ function simulate_actual2021_ArbThroughputPenalty_NoDeg(
     if !isdir(joinpath(@__DIR__, "results"))
         mkdir(joinpath(@__DIR__, "results"))
     end
-    optimizer = set_optimizer()
     lookaheads = [
         Minute(5),
         Minute(15),
@@ -92,7 +91,7 @@ function simulate_actual2021_ArbThroughputPenalty_NoDeg(
         d_lifetime, capital_cost
     )
     perfect_foresight_result = NEMStorageUnderUncertainty.run_perfect_foresight(
-        optimizer,
+        optimizer_with_attributes(HiGHS.Optimizer, "threads" => 20),
         storage,
         actual_data,
         formulation,
