@@ -98,23 +98,18 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
         state::String,
         param::Union{String,Nothing}=nothing,
     )
-        title_map = Dict(
-            "arbitrage_no_degradation" => "Arbitrage",
-            "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",
-            "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
-        )
         energy = parse(Float64, match(r"[A-Z]{2,3}_([0-9\.]*)MWh.*", file).captures[])
         energy = convert(Int64, energy)
         if isnothing(param)
             title = (
                 "$energy MWh BESS - " *
-                title_map[formulation] *
+                NEMStorageUnderUncertainty.plot_title_map[formulation] *
                 "- $state Prices 2021 (Forecast)"
             )
         else
             title = (
                 "$energy MWh BESS - " *
-                title_map[formulation] *
+                NEMStorageUnderUncertainty.plot_title_map[formulation] *
                 " $param AUD/MWh " *
                 "- $state Prices 2021 (Forecast)"
             )

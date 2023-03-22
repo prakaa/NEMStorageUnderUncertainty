@@ -9,6 +9,7 @@ import MathOptInterface: OptimizerWithAttributes, RelativeGap, get
 import Parquet: read_parquet
 
 # Using
+using CairoMakie
 using DataFrames
 using Dates
 using Impute: Impute
@@ -50,7 +51,9 @@ include("model/build_and_run.jl")
 include("simulations.jl")
 ## Utilities
 include("simulation_utils.jl")
-## Results
+## Results Compilers
 include("results.jl")
+## Plotting Helpers
+include("plots.jl")
 
 end
