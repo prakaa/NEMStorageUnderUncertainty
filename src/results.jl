@@ -137,7 +137,8 @@ function calculate_vpi_vpf(df::DataFrame)
             actual_mask = df.data_type .== "actual"
             forecast_mask = df.data_type .== "forecast"
             pf_rev = df[
-                cap_mask .& actual_mask .& (df.lookahead .== "Perfect Foresight"), :revenue
+                cap_mask .& forecast_mask .& (df.lookahead .== "Perfect Foresight"),
+                :revenue,
             ]
             pi_rev = df[cap_mask .& actual_mask .& lk_mask, :revenue]
             v_pi = pi_rev - df[cap_mask .& forecast_mask .& lk_mask, :revenue]
