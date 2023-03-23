@@ -8,3 +8,4 @@
 module add julia/1.8.2-ilp64
 julia -e 'using Pkg;Pkg.activate("NEMStorageUnderUncertainty");Pkg.instantiate()'
 julia --project="NEMStorageUnderUncertainty" -- NEMStorageUnderUncertainty/simulations/arbitrage_throughputpenalty_no_degradation/simulate_forecast.jl $power $energy $cost
+echo "Submitted ArbThroughputPenalty Forecast $power MW $energy MWh $cost AUD/MWH"
