@@ -117,11 +117,23 @@ function plot_value_of_information_and_foresight_across_formulations(
         fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 1000))
         state_data.label = map(x -> formulation_label_map[x], state_data.formulation)
         state_data.param = replace(state_data.param, missing => "")
+        non_param_formulations = unique(state_data[state_data.param .== "", :formulation])
         state_data.label = state_data.label .* " " .* string.(state_data.param)
         formulations = sort(unique(state_data.label))
-        colors = [
-            c for c in cgrad(:Set2_6, length(formulations); categorical=true, alpha=0.8)
-        ]
+        colors = vcat(
+            [
+                c for c in
+                cgrad(:Dark2_6, length(non_param_formulations); categorical=true, alpha=0.8)
+            ],
+            [
+                c for c in cgrad(
+                    :Blues,
+                    length(formulations) - length(non_param_formulations);
+                    categorical=true,
+                    alpha=0.8,
+                )
+            ],
+        )
         for (i, mw_capacity) in enumerate(plot_mw_capacities)
             energy = round(Int, unique(state_data.energy_capacity)[])
             mw_df = state_data[state_data.power_capacity .== mw_capacity, :]
