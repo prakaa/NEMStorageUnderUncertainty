@@ -13,6 +13,7 @@ makedocs(;
                 ["variables.md", "constraints.md", "objectives.md", "build.md"],
         ],
         "Simulations" => ["simulations.md", "simulation_utils.md"],
+        "Results Processing" => "results.md",
     ],
 )
 

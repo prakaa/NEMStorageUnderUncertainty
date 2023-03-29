@@ -10,3 +10,4 @@ These pages document the source code used to run storage simulations:
   * [Price Data Compilers](@ref) documents the functions that compile, clean and assemble actual and forecast price data for use in models/simulations
   * [Model Formulations](@ref) documents the mathematical optimisation problems formulated for each model horizon
   * [Simulation Functions](@ref) documents the code that is used to string model horizons together and simulate the rolling horizon/optimal control problem
+  * [Simulation Results Processing and Calculations](@ref) documents simulation results compilers, and functions that calculate aggregate results (e.g. annual revenue, value of perfect information, value of perfect foresight)

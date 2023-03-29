@@ -98,17 +98,19 @@ function _summarise_simulations(
     return summary_data
 end
 
-"""
+@doc raw"""
 Calculates values of perfect information and foresight as absolute values (in AUD) and as
 a percentage of perfect foresight revenue.
 
 **Value of perfect information**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be in the *lookahead
 horizon*.
+  * ``VPI = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
 
 **Value of perfect foresight**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be *over the entire
-year*.
+year*
+  * ``VPF = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
 
 N.B. This function assumes that the input `df` only has data that corresponds to a device
 of a particular `energy_capacity`.
