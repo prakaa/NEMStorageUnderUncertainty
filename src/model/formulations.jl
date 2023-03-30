@@ -18,7 +18,7 @@ Maximises storage revenue:
 
 ```math
 \begin{aligned}
-  \max_{t} \quad & \sum_{t=1}^T{\tau\lambda_t(p_t-q_t)}\\
+  \max \quad & \sum_{t \in T}{\tau\lambda_t(p_t-q_t)}\\
   \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
   & p_t \geq 0 \\
   & q_t \geq 0 \\
@@ -51,7 +51,7 @@ Maximises storage revenue subject to pro-rata application of throughput limits:
 
 ```math
 \begin{aligned}
-  \max_{t} \quad & \sum_{t=1}^T{\tau\lambda_t(p_t-q_t)}\\
+  \max \quad & \sum_{t \in T}{\tau\lambda_t(p_t-q_t)}\\
   \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
   & p_t \geq 0 \\
   & q_t \geq 0 \\
@@ -86,7 +86,7 @@ Maximises storage revenue subject to pro-rata penalisation of throughput/cycling
 
 ```math
 \begin{aligned}
-  \max_{t} \quad & \sum_{t=1}^{T}{\tau\lambda_t(p_t - q_t)} - \frac{d_T - d_0}{d_{lifetime}} e_{rated} c_{capital} \\
+  \max \quad & \sum_{t \in T}{\tau\lambda_t(p_t - q_t)} - \frac{d_T - d_0}{d_{lifetime}} e_{rated} c_{capital} \\
   \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
   & p_t \geq 0 \\
   & q_t \geq 0 \\
