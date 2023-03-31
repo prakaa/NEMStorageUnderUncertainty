@@ -132,13 +132,11 @@ function _add_objective_cap_contracted!(
         model,
         Max,
         sum(
-            (
-                prices[_get_times_index(t, times)] * τ * (discharge_mw[t] - charge_mw[t]) -
-                τ *
-                beta_t[_get_times_index(t, times)] *
-                C *
-                (prices[_get_times_index(t, times)] - 300.0) for t in times
-            ) - (throughput_mwh[end] - d_0) / d_lifetime * e_rated * c_capital,
-        )
+            prices[_get_times_index(t, times)] * τ * (discharge_mw[t] - charge_mw[t]) -
+            τ *
+            beta_t[_get_times_index(t, times)] *
+            C *
+            (prices[_get_times_index(t, times)] - 300.0) for t in times
+        ) - (throughput_mwh[end] - d_0) / d_lifetime * e_rated * c_capital,
     )
 end

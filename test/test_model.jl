@@ -29,7 +29,11 @@ function test_run_model(
         NEMStorageUnderUncertainty.NoDegradation();
         time_limit_sec=time_limit_sec,
     )
-    return model
+    if typeof(formulation) == NEMStorageUnderUncertainty.ArbitrageCapContracted
+        return (model, actual)
+    else
+        return model
+    end
 end
 
 @testset "Run Model Tests" begin
@@ -46,7 +50,7 @@ end
     )
     test_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2022, 1, 1, 0, 0, 0)
     test_interval_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 1, 0, 5, 0)
-    test_day_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 2, 0, 5, 0)
+    test_day_times = DateTime(2021, 12, 21, 0, 5, 0), DateTime(2021, 12, 22, 0, 5, 0)
     @testset "Test StandardArbitrage" begin
         formulation = NEMStorageUnderUncertainty.StandardArbitrage()
         month_model = test_run_model(
@@ -84,12 +88,13 @@ end
         formulation = NEMStorageUnderUncertainty.StandardArbitrageThroughputLimit(
             bess.energy_capacity * 365
         )
+        test_day_tp_times = DateTime(2021, 12, 1, 0, 5, 0), DateTime(2021, 12, 2, 0, 5, 0)
         day_model = test_run_model(
             bess,
             test_data_path,
-            test_day_times[1],
-            test_day_times[2],
-            test_day_times[1] + Minute(10),
+            test_day_tp_times[1],
+            test_day_tp_times[2],
+            test_day_tp_times[1] + Minute(10),
             formulation,
         )
         con_ref = JuMP.constraint_by_name(day_model, "throughput_limit")
@@ -156,6 +161,7 @@ end
         vals[throughput_mwh[test_day_times[2]]] = bess.throughput + 10.0
         objval = value(z -> vals[z], JuMP.objective_function(day_model))
         @test isapprox(objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh))
+        vals = Dict()
         interval_model = test_run_model(
             bess,
             test_data_path,
@@ -174,5 +180,69 @@ end
         vals[throughput_mwh[test_interval_times[2]]] = bess.throughput + 10.0
         objval = value(z -> vals[z], JuMP.objective_function(interval_model))
         @test isapprox(objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh))
+    end
+
+    @testset "Test Cap Contracted" begin
+        tp_lim = bess.energy_capacity * 365.0 * 10
+        cap_cost_per_mwh = 1000.0 * 1000.0
+        cap_contract_mw = bess.energy_capacity * 0.5
+        formulation = NEMStorageUnderUncertainty.ArbitrageCapContracted(
+            tp_lim, cap_cost_per_mwh, cap_contract_mw
+        )
+        day_model, day_actual = test_run_model(
+            bess,
+            test_data_path,
+            test_day_times[1],
+            test_day_times[2],
+            test_day_times[1],
+            formulation,
+        )
+        vals = Dict()
+        discharge_mw = day_model[:discharge_mw]
+        charge_mw = day_model[:charge_mw]
+        throughput_mwh = day_model[:throughput_mwh]
+        for t in test_day_times[1]:Minute(5):test_day_times[2]
+            vals[discharge_mw[t]] = 0.0
+            vals[charge_mw[t]] = 0.0
+        end
+        vals[throughput_mwh[test_day_times[2]]] = bess.throughput + 10.0
+        cap_loss = sum(
+            @. day_actual.τ *
+                (day_actual.prices > 300.0) *
+                cap_contract_mw *
+                (day_actual.prices - 300.0)
+        )
+        @test cap_loss > 0.0
+        objval = value(z -> vals[z], JuMP.objective_function(day_model))
+        @test isapprox(
+            objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh - cap_loss)
+        )
+        interval_model, interval_actual = test_run_model(
+            bess,
+            test_data_path,
+            test_interval_times[1],
+            test_interval_times[2],
+            test_interval_times[2],
+            formulation,
+        )
+        vals = Dict()
+        discharge_mw = interval_model[:discharge_mw]
+        charge_mw = interval_model[:charge_mw]
+        throughput_mwh = interval_model[:throughput_mwh]
+        cap_loss = sum(
+            @. interval_actual.τ *
+                (interval_actual.prices > 300.0) *
+                cap_contract_mw *
+                (interval_actual.prices - 300.0)
+        )
+        for t in test_interval_times[1]:Minute(5):test_interval_times[2]
+            vals[discharge_mw[t]] = 0.0
+            vals[charge_mw[t]] = 0.0
+        end
+        vals[throughput_mwh[test_interval_times[2]]] = bess.throughput + 10.0
+        objval = value(z -> vals[z], JuMP.objective_function(interval_model))
+        @test isapprox(
+            objval, (-10.0 / tp_lim * bess.energy_capacity * cap_cost_per_mwh) - cap_loss
+        )
     end
 end
