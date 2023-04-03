@@ -13,7 +13,7 @@ do
 for powerratio in 0.125 0.25 0.5 1 2 4 8
 do
 power=$(echo "$energy*$powerratio" | bc -l)
-cap=$(echo "$power*$cap_frac$" | bc -l)
+cap=$(echo "$power*$cap_frac" | bc -l)
 for file in pbs/arbcapcontracted_nodeg/*
 do
 qsub -v "power=$power,energy=$energy,cap=$cap" $file
