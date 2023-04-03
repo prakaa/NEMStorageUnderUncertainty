@@ -125,7 +125,7 @@ function simulate_actual2021_ArbCapContracted_NoDeg(
         joinpath(
             @__DIR__,
             "results",
-            ("NSW_$(energy)MWh_ArbCapContracted_param$(capital_cost)_NoDeg_2021.jld2"),
+            ("NSW_$(energy)MWh_ArbCapContracted_param$(cap_contracted)_NoDeg_2021.jld2"),
         ),
         "actual",
         "$(power)MW",
