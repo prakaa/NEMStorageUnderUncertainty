@@ -106,7 +106,9 @@ function plot_value_of_information_and_foresight_across_formulations(
         "arbitrage_no_degradation" => "Arb",
         "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
         "arbitrage_throughputlimited_no_degradation" => "TP Limited",
+        "arbitrage_capcontracted_no_degradation" => "Cap + TP Pen.",
     )
+    seq_colormaps = (:Blues, :Oranges, :Greens)
     data_file = [f for f in readdir(data_path) if f == "vpi_vpf.jld2"][]
     all_data = load(joinpath(data_path, data_file))
     for (state, value) in pairs(all_data)
@@ -118,22 +120,33 @@ function plot_value_of_information_and_foresight_across_formulations(
         state_data.label = map(x -> formulation_label_map[x], state_data.formulation)
         state_data.param = replace(state_data.param, missing => "")
         non_param_formulations = unique(state_data[state_data.param .== "", :formulation])
+        param_formulations = unique(state_data[state_data.param .!= "", :formulation])
         state_data.label = state_data.label .* " " .* string.(state_data.param)
         formulations = sort(unique(state_data.label))
-        colors = vcat(
+        colors = []
+        append!(
+            colors,
             [
                 c for c in
                 cgrad(:Dark2_6, length(non_param_formulations); categorical=true, alpha=0.8)
             ],
-            [
-                c for c in cgrad(
-                    :Blues,
-                    length(formulations) - length(non_param_formulations);
-                    categorical=true,
-                    alpha=0.8,
-                )
-            ],
         )
+        for (i, f) in enumerate(param_formulations)
+            append!(
+                colors,
+                [
+                    c for c in cgrad(
+                        seq_colormaps[i],
+                        length([
+                            form for
+                            form in formulations if contains(form, formulation_label_map[f])
+                        ]);
+                        categorical=true,
+                        alpha=0.8,
+                    )
+                ],
+            )
+        end
         for (i, mw_capacity) in enumerate(plot_mw_capacities)
             energy = round(Int, unique(state_data.energy_capacity)[])
             mw_df = state_data[state_data.power_capacity .== mw_capacity, :]
@@ -190,7 +203,7 @@ function plot_value_of_information_and_foresight_for_each_formulation(
                     title = (
                         title_stem *
                         NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                        " $param AUD/MWh " *
+                        " $param " *
                         "- $state Prices 2021"
                     )
                     filename = "$(state)_$(energy)_$(formulation)_$(param)_vpi_vpf.pdf"
