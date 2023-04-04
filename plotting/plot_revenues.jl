@@ -86,7 +86,7 @@ function plot_revenues_across_formulations(
                 title = (
                     title_stem *
                     NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                    " $param AUD/MWh " *
+                    " $param " *
                     "- $state Prices 2021"
                 )
                 filename = "$(state)_$(energy)_$(formulation)_$(param)_$(fn_tag).pdf"

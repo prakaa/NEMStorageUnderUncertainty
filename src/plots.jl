@@ -1,7 +1,8 @@
 plot_title_map = Dict(
     "arbitrage_no_degradation" => "Arbitrage",
     "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",
-    "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
+    "arbitrage_throughputpenalty_no_degradation" => "TP Penalty (AUD/MWh)",
+    "arbitrage_capcontracted_no_degradation" => "Cap + TP Penalty (MW)",
 )
 
 """

@@ -110,7 +110,7 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
             title = (
                 "$energy MWh BESS - " *
                 NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                " $param AUD/MWh " *
+                " $param " *
                 "- $state Prices 2021 (Forecast)"
             )
         end
