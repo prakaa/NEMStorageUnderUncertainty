@@ -13,6 +13,7 @@ data_scripts/NEMSUU_venv
 
 # data
 data/*
+price-error-analysis/**/*.parquet
 
 # simulation results
 simulations/**/*.jld2
