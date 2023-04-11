@@ -32,6 +32,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# curve fitting
+import scipy
+
 # silence NEMSEER and NEMOSIS logging
 logging.getLogger("nemosis").setLevel(logging.WARNING)
 logging.getLogger("nemseer").setLevel(logging.ERROR)
@@ -124,6 +127,7 @@ download_raw_data(
 #
 # - The last two `PREDISPATCH` forecasts overlap with `P5MIN`
 #     - These are removed from `PREDISPATCH`
+
 
 # %%
 def calculate_price_error(analysis_start: str, analysis_end: str) -> pd.DataFrame:
@@ -288,6 +292,7 @@ aheads = [
 # %% [markdown]
 # ### Rugplots of Raw Errors
 
+
 # %%
 def plot_rugplots(price_error: pd.DataFrame) -> None:
     if not Path("error-rugs").exists():
@@ -321,77 +326,10 @@ def plot_rugplots(price_error: pd.DataFrame) -> None:
 
 plot_rugplots(price_error)
 
-# %% [markdown]
-# ### Errors greater than a threshold - all regions
-
-# %%
-def count_errors_above_threshold(price_error: pd.DataFrame, threshold: float) -> None:
-    if not Path("error-threshold").exists():
-        Path("error-threshold").mkdir()
-    all_reg_fig = plt.figure(figsize=(12, 9))
-    ax1 = plt.subplot2grid(shape=(2, 6), loc=(0, 0), colspan=2, fig=all_reg_fig)
-    ax2 = plt.subplot2grid(
-        (2, 6), (0, 2), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
-    )
-    ax3 = plt.subplot2grid(
-        (2, 6), (0, 4), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
-    )
-    ax4 = plt.subplot2grid(
-        (2, 6), (1, 1), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
-    )
-    ax5 = plt.subplot2grid(
-        (2, 6), (1, 3), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
-    )
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    axes = [ax1, ax2, ax3, ax4, ax5]
-    for region, ax in zip(price_error.REGIONID.unique(), axes):
-        region_df = price_error.query("REGIONID==@region")
-        box_df = region_df[region_df.ahead_time.isin(aheads)]
-        counts = {}
-        box_df.loc[:, "ahead_time"] = (
-            (box_df.ahead_time.dt.days * 24 + box_df.ahead_time.dt.seconds / 3600)
-            .round(1)
-            .astype(str)
-        )
-        for at in box_df.ahead_time.unique():
-            at_df = box_df[box_df.ahead_time == at]
-            counts[at] = len(at_df)
-        box_df.ahead_time = box_df.ahead_time.replace(
-            {at: (at + f", [{counts[at]}]") for at in counts.keys()}
-        )
-        box_df.loc[:, "threshold"] = box_df.error.abs() >= threshold
-        threshold_count = box_df.groupby("ahead_time", sort=False)["threshold"].sum()
-        total_count = (
-            box_df.groupby("ahead_time", sort=False)["threshold"]
-            .count()
-            .rename("total")
-        )
-        counts = pd.merge(
-            threshold_count, total_count, left_index=True, right_index=True
-        )
-        ax.bar(counts.index, counts.threshold / counts.total * 100, color=colors[1])
-        ax.set_title(f"{region}", fontsize=12)
-        ax.set_ylabel(f"Errors >= ${threshold}/MW/hr (% of all samples)")
-        ax.set_xlabel("Ahead Time (hours), [# of samples]")
-        ax.xaxis.set_tick_params(rotation=45)
-        ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
-    all_reg_fig.tight_layout()
-    all_reg_fig.suptitle(
-        f"Price Forecast Errors Above {threshold} $/MWh, 2021", fontsize=24
-    )
-    all_reg_fig.savefig(
-        Path("error-threshold", f"all_regions_percent_above_{threshold}_2021.png"),
-        dpi=600,
-    )
-    return None
-
-
-for thresh in (300.0, 1000.0, 10000.0):
-    count_errors_above_threshold(price_error, thresh)
 
 # %% [markdown]
+# ### Errors greater than a threshold - region by region
 # #### By region
-
 # %%
 def count_errors_above_threshold_by_region(
     price_error: pd.DataFrame, threshold: float
@@ -446,4 +384,140 @@ def count_errors_above_threshold_by_region(
 for thresh in (300.0, 1000.0, 10000.0):
     count_errors_above_threshold_by_region(price_error, thresh)
 
+# %% [markdown]
+# ### Errors greater than a threshold - all regions
+
+
 # %%
+def count_errors_above_threshold(
+    price_error: pd.DataFrame, threshold: float, results: dict
+) -> dict:
+    if not Path("error-threshold").exists():
+        Path("error-threshold").mkdir()
+    all_reg_fig = plt.figure(figsize=(12, 9))
+    ax1 = plt.subplot2grid(shape=(2, 6), loc=(0, 0), colspan=2, fig=all_reg_fig)
+    ax2 = plt.subplot2grid(
+        (2, 6), (0, 2), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
+    )
+    ax3 = plt.subplot2grid(
+        (2, 6), (0, 4), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
+    )
+    ax4 = plt.subplot2grid(
+        (2, 6), (1, 1), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
+    )
+    ax5 = plt.subplot2grid(
+        (2, 6), (1, 3), colspan=2, sharex=ax1, sharey=ax1, fig=all_reg_fig
+    )
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    axes = [ax1, ax2, ax3, ax4, ax5]
+    results[threshold] = {}
+    for region, ax in zip(price_error.REGIONID.unique(), axes):
+        region_df = price_error.query("REGIONID==@region")
+        box_df = region_df[region_df.ahead_time.isin(aheads)]
+        counts = {}
+        box_df.loc[:, "ahead_time"] = (
+            (box_df.ahead_time.dt.days * 24 + box_df.ahead_time.dt.seconds / 3600)
+            .round(1)
+            .astype(str)
+        )
+        for at in box_df.ahead_time.unique():
+            at_df = box_df[box_df.ahead_time == at]
+            counts[at] = len(at_df)
+        box_df.ahead_time = box_df.ahead_time.replace(
+            {at: (at + f", [{counts[at]}]") for at in counts.keys()}
+        )
+        box_df.loc[:, "threshold"] = box_df.error.abs() >= threshold
+        threshold_count = box_df.groupby("ahead_time", sort=False)["threshold"].sum()
+        total_count = (
+            box_df.groupby("ahead_time", sort=False)["threshold"]
+            .count()
+            .rename("total")
+        )
+        counts = pd.merge(
+            threshold_count, total_count, left_index=True, right_index=True
+        )
+        counts["frac"] = counts.threshold / counts.total
+        results[threshold][region] = counts
+        ax.bar(counts.index, counts.frac * 100, color=colors[1])
+        ax.set_title(f"{region}", fontsize=12)
+        ax.set_ylabel(f"Errors >= ${threshold}/MW/hr (% of all samples)")
+        ax.set_xlabel("Ahead Time (hours), [# of samples]")
+        ax.xaxis.set_tick_params(rotation=45)
+        ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
+    all_reg_fig.tight_layout()
+    all_reg_fig.suptitle(
+        f"Price Forecast Errors Above {threshold} $/MWh, 2021", fontsize=24
+    )
+    all_reg_fig.savefig(
+        Path("error-threshold", f"all_regions_percent_above_{threshold}_2021.png"),
+        dpi=600,
+    )
+    return results
+
+
+thresh_frac = {}
+for thresh in (300.0, 1000.0, 10000.0):
+    counts = count_errors_above_threshold(price_error, thresh, thresh_frac)
+
+# %% [markdown]
+# ## Discounting Curve Fitting
+
+
+# %%
+def exponential_discount(times, rate):
+    return np.exp(np.multiply(-1 * rate, times))
+
+
+def hyperbolic_discount(times, rate):
+    return np.divide(1, (1 + np.multiply(rate, times)))
+
+
+# %%
+(exp_params, hyp_params, exp_rmsds, hyp_rmsds) = ([], [], [], [])
+for threshold in counts.keys():
+    df = counts[threshold]["NSW1"]
+    # only day-ahead or shorter
+    df = df.iloc[1:, :]
+    times = df.index.str.extract("([0-9\.]*)", expand=False).astype(float).values
+    max_scaled_counts = (1 - df.frac / df.frac.max()).values
+
+    [exp_fit], _ = scipy.optimize.curve_fit(
+        exponential_discount, times, max_scaled_counts
+    )
+    exp_params.append(exp_fit)
+    [hyp_fit], _ = scipy.optimize.curve_fit(
+        hyperbolic_discount, times, max_scaled_counts
+    )
+    hyp_params.append(hyp_fit)
+
+    exp_curve = exponential_discount(times, exp_fit)
+    hyp_curve = hyperbolic_discount(times, hyp_fit)
+    exp_rmsd = np.sqrt(
+        np.sum(np.subtract(exp_curve, max_scaled_counts) ** 2) / len(max_scaled_counts)
+    )
+    exp_rmsds.append(exp_rmsd)
+    hyp_rmsd = np.sqrt(
+        np.sum(np.subtract(hyp_curve, max_scaled_counts) ** 2) / len(max_scaled_counts)
+    )
+    hyp_rmsds.append(hyp_rmsd)
+    fig, ax = plt.subplots()
+    ax.plot(times, max_scaled_counts, label="Counts (max-scaled)")
+    ax.plot(times, exp_curve, label="Exponential discount fit")
+    ax.plot(times, hyp_curve, label="Hyperbolic discount fit")
+    ax.set_title(
+        f"Fitting Discount Functions to Price Error Counts (>= ${threshold}/MWh), NSW 2021"
+    )
+    ax.set_xlabel("Hours ahead")
+    ax.set_ylabel("1 - Max-scaled/Discount factor")
+    ax.legend()
+
+summary = pd.DataFrame(
+    {
+        "threshold": counts.keys(),
+        "exp_fit": exp_params,
+        "hyp_fit": hyp_params,
+        "exp_rmsds": exp_rmsds,
+        "hyp_rmsds": hyp_rmsds,
+    }
+)
+print(summary)
