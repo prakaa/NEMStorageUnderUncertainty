@@ -18,11 +18,12 @@ function _categorise_simulation_results(sim_path::String)
     sim_formulations = readdir(sim_path)
     categorisation = Dict{String,Dict}()
     for formulation in sim_formulations
-        println()
-        results = filter(
-            x -> splitext(x)[2] == ".jld2",
-            [x for x in readdir(joinpath(sim_path, formulation, "results"))],
-        )
+        if ispath(joinpath(sim_path, formulation, "results"))
+            sim_files = [x for x in readdir(joinpath(sim_path, formulation, "results"))]
+            results = filter(x -> splitext(x)[2] == ".jld2", sim_files)
+        else
+            continue
+        end
         states = unique([x[1:3] for x in results])
         for state in states
             state_results = filter(x -> contains(x, state), results)
