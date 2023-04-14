@@ -89,7 +89,7 @@ function simulate_actual2021_ArbCapContracted_NoDeg(
     d_lifetime = storage.energy_capacity * 365.0 * 10.0
     # Middle of the range capital cost for 2022-23
     formulation = NEMStorageUnderUncertainty.ArbitrageCapContracted(
-        d_lifetime, 500000.0, cap_contracted
+        d_lifetime, 600000.0, cap_contracted
     )
     perfect_foresight_result = NEMStorageUnderUncertainty.run_perfect_foresight(
         optimizer_with_attributes(HiGHS.Optimizer, "threads" => 20),
