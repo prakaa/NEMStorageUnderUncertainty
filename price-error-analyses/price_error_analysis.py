@@ -473,6 +473,9 @@ def hyperbolic_discount(times, rate):
 
 
 # %%
+curve_fit_dir = Path("discount-curve-fitting")
+if not curve_fit_dir.exists():
+    curve_fit_dir.mkdir()
 (exp_params, hyp_params, exp_rmsds, hyp_rmsds) = ([], [], [], [])
 for threshold in counts.keys():
     df = counts[threshold]["NSW1"]
@@ -510,6 +513,7 @@ for threshold in counts.keys():
     ax.set_xlabel("Hours ahead")
     ax.set_ylabel("1 - Max-scaled/Discount factor")
     ax.legend()
+    fig.savefig(Path(curve_fit_dir, f"curve_fits_{threshold}.png"), dpi=600)
 
 summary = pd.DataFrame(
     {
@@ -520,4 +524,4 @@ summary = pd.DataFrame(
         "hyp_rmsds": hyp_rmsds,
     }
 )
-print(summary)
+summary.to_csv(Path(curve_fit_dir, "curve-fitting-summary.csv"))
