@@ -118,3 +118,43 @@ function results_to_jld2(results_file::String, group::String, key::String, data:
     end
     return nothing
 end
+
+@doc raw"""
+Exponential discounting
+
+```math
+DF(r, t) = e^{-rt}
+```
+
+# Arguments
+
+  * `times`: Vector that describes ahead times in hours ahead
+  * `r`: Discount rate
+
+# Returns
+
+Discount factor vector
+"""
+function exponential_discounting(times::Vector{Float64}, r::Float64)
+    return @. exp(-1.0 * r * times)
+end
+
+@doc raw"""
+Hyperbolic discounting
+
+```math
+DF(r, t) = \frac{1}{1+rt}
+```
+
+# Arguments
+
+  * `times`: Vector that describes ahead times in hours ahead
+  * `r`: Discount rate
+
+# Returns
+
+Discount factor vector
+"""
+function hyperbolic_discounting(times::Vector{Float64}, r::Float64)
+    return @. 1.0 / (1.0 + r * times)
+end

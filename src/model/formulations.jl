@@ -160,6 +160,55 @@ struct ArbitrageCapContracted <: StorageModelFormulation
     C::Float64
 end
 
+@doc raw"""
+# Summary
+Maximises storage revenue subject to:
+  1. Pro-rata penalisation of throughput/cycling
+  2. Discounted future decisions (based on a discount function & discount rate)
+
+  * Future periods are discounted by a discount factor
+  * No cycling/throughput limits are imposed on the storage device
+  * Revenue is defined by the (discounted) spot price for energy and is
+    penalised based on throughput
+    * The penalty is the proportion of the warrantied throughput lifetime of the storage
+      device expended during the modelled period,
+      multiplied by the cost of a new storage device
+  * Intertemporal SoC constraints are applied, including from `e₀` (initial SoC of storage
+    device) to `e₁` (first modelled SoC)
+
+```math
+\begin{aligned}
+\max \quad & \sum_{t \in T}\left(\tau(p_t - q_t) \times \lambda_t DF(r, t)\right) - \frac{d_T - d_0}{d_{lifetime}} e_{rated} c_{capital} \\
+  \textrm{s.t.} \quad & u_t \in \{0,1\}    \\
+  & p_t \geq 0 \\
+  & q_t \geq 0 \\
+  & p_t - \bar{p}\left(1-u_t\right) \leq 0\\
+  & q_t - \bar{p}u_t \leq 0\\
+  & \underline{e} \leq e_t \leq \bar{e}    \\
+  & e_t-e_{t-1}- \left( q_t\eta_{charge}\tau\right)+\frac{p_t\tau}{\eta_{discharge}} = 0\\
+  & e_1 - e_0 - \left( q_1\eta_{charge}\tau\right)+\frac{p_1\tau}{\eta_{discharge}} = 0\\
+  & d_t-d_{t-1} - p_t\tau = 0\\
+  & d_1 - d_0 - p_1\tau = 0\\
+\end{aligned}
+```
+
+# Attributes
+
+  * `d_lifetime`: Warrantied throughput lifetime of the storage device in MWh
+  * `c_capital`: Capital cost of storage device in AUD/MWh
+  * `discount_function`: Function that calculates discount factors. Should take a
+                        `Vector` of discount times (hours ahead) and the discount rate
+                         $r$ (per hour) as arguments.
+  * `r`: Discount rate. Should have units $hr^{-1}$.
+```
+"""
+struct ArbitrageDiscounted <: StorageModelFormulation
+    d_lifetime::Float64
+    c_capital::Float64
+    discount_function::Function
+    r::Float64
+end
+
 """
 # Arguments
 
