@@ -189,7 +189,7 @@ function _add_objective_discounted!(
     discharge_mw = model[:discharge_mw]
     charge_mw = model[:charge_mw]
     throughput_mwh = model[:throughput_mwh]
-    time_indices = range(1, length(times); step=1)
+    time_indices = Vector(range(1, length(times); step=1))
     if length(time_indices) == 1
         discount_factors = [1.0]
     else
