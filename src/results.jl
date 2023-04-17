@@ -118,7 +118,7 @@ of a particular `energy_capacity`.
 
 # Arguments
 
-  * `df`: `DataFrame` produced by [`_summarise_simulations`](@ref)
+  * `df`: `DataFrame` produced by `_summarise_simulations`
 
 # Returns
 

@@ -7,7 +7,7 @@ time interval ``t``. Adds two constraints to `model`:
 In the absence of these constraints, simultaneous charging and
 discharging was observed for a BESS device simulated for the following model formulations:
   * [`StandardArbitrage`](@ref)
-  * [`StandardArbitrageThroughputPenalty`](@ref), up to a certain throughput penalty
+  * [`ArbitrageThroughputPenalty`](@ref), up to a certain throughput penalty
 
 # Arguments
 
