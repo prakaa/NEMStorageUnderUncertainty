@@ -7,6 +7,7 @@ function _makie_plot(
     plot_data::DataFrame, title::String, ylabel::String, yscale::Function, fillto::Float64
 )
     plot_data.revenue = Float64.(plot_data.revenue)
+    sort!(plot_data, [:power_capacity, :data_type])
     plot_data.sim = @. plot_data[:, :data_type] *
         "/" *
         string(plot_data[:, :power_capacity]) *
