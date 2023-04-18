@@ -12,7 +12,7 @@ power=$(echo "$energy*$powerratio" | bc -l)
 for file in pbs/arbdiscounted_nodeg/*
 do
 qsub -v "power=$power,energy=$energy,func=$func" $file
-sleep 30s
+sleep 90s
 done
 done
 done
