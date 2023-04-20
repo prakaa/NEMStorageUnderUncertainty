@@ -84,10 +84,11 @@ function plot_revenues_across_formulations(
                 )
                 filename = "$(state)_$(energy)_$(formulation)_$(fn_tag).pdf"
             else
+                param = uppercasefirst(param)
                 title = (
                     title_stem *
                     NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                    " $param " *
+                    " [$param] " *
                     "- $state Prices 2021"
                 )
                 filename = "$(state)_$(energy)_$(formulation)_$(param)_$(fn_tag).pdf"

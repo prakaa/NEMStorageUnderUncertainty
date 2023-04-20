@@ -110,7 +110,7 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
             title = (
                 "$energy MWh BESS - " *
                 NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                " $param " *
+                " [$param] " *
                 "- $state Prices 2021 (Forecast)"
             )
         end
@@ -143,8 +143,13 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
             else
                 for file in results
                     data = load(joinpath(results_path, file))
-                    param = parse(Float64, match(r".*_param(.*)_NoDeg.*", file).captures[])
-                    param = convert(Int64, param)
+                    param = match(r".*_param(.*)_NoDeg.*", file).captures[]
+                    if !isnothing(tryparse(Float64, param))
+                        param = parse(Float64, param)
+                        param = convert(Int64, param)
+                    else
+                        param = uppercasefirst(param)
+                    end
                     fig, energy = _plot_formulation(
                         data, formulation, file, selected_sims, state, string(param)
                     )

@@ -107,8 +107,9 @@ function plot_value_of_information_and_foresight_across_formulations(
         "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
         "arbitrage_throughputlimited_no_degradation" => "TP Limited",
         "arbitrage_capcontracted_no_degradation" => "Cap + TP Pen.",
+        "arbitrage_discounted_no_degradation" => "Discounting + TP Pen.",
     )
-    seq_colormaps = (:Blues, :Oranges, :Greens)
+    seq_colormaps = (:Hokusai2, :Tam)
     data_file = [f for f in readdir(data_path) if f == "vpi_vpf.jld2"][]
     all_data = load(joinpath(data_path, data_file))
     for (state, value) in pairs(all_data)
@@ -121,16 +122,12 @@ function plot_value_of_information_and_foresight_across_formulations(
         state_data.param = replace(state_data.param, missing => "")
         non_param_formulations = unique(state_data[state_data.param .== "", :formulation])
         param_formulations = unique(state_data[state_data.param .!= "", :formulation])
-        state_data.label = state_data.label .* " " .* string.(state_data.param)
+        state_data[state_data.param .!= "", :label] =
+            state_data[state_data.param .!= "", :label] .* " [" .*
+            uppercasefirst.(string.(state_data[state_data.param .!= "", :param])) .* "]"
         formulations = sort(unique(state_data.label))
         colors = []
-        append!(
-            colors,
-            [
-                c for c in
-                cgrad(:Dark2_6, length(non_param_formulations); categorical=true, alpha=0.8)
-            ],
-        )
+        append!(colors, Makie.wong_colors()[3:(2 + length(non_param_formulations))])
         for (i, f) in enumerate(param_formulations)
             append!(
                 colors,
@@ -200,14 +197,15 @@ function plot_value_of_information_and_foresight_for_each_formulation(
             else
                 params = unique(df.param)
                 for param in params
+                    filename = "$(state)_$(energy)_$(formulation)_$(param)_vpi_vpf.pdf"
+                    param_df = df[df.param .== param, :]
+                    param = uppercasefirst(param)
                     title = (
                         title_stem *
                         NEMStorageUnderUncertainty.plot_title_map[formulation] *
-                        " $param " *
+                        " [$param] " *
                         "- $state Prices 2021"
                     )
-                    filename = "$(state)_$(energy)_$(formulation)_$(param)_vpi_vpf.pdf"
-                    param_df = df[df.param .== param, :]
                     fig = _makie_plot_each_formulation(param_df, title, scale, 0.0)
                     save(joinpath(save_path, filename), fig; pt_per_unit=1)
                 end
