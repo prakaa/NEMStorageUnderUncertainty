@@ -10,13 +10,6 @@ function _makie_plot_all(
     yscale::Function,
     fillto::Float64,
 )
-    formulation_label_map = Dict(
-        "arbitrage_no_degradation" => "Arb",
-        "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
-        "arbitrage_throughputlimited_no_degradation" => "TP Limited",
-        "arbitrage_capcontracted_no_degradation" => "Cap + TP Pen.",
-        "arbitrage_discounted_no_degradation" => "Discounting + TP Pen. (600000)",
-    )
     actual_rev = DataFrame[]
     forecast_rev = DataFrame[]
     for (key, value) in pairs(plot_data)
@@ -42,7 +35,9 @@ function _makie_plot_all(
     non_param_formulations = unique(actual_rev[actual_rev.param .== "", :formulation])
     param_formulations = unique(actual_rev[actual_rev.param .!= "", :formulation])
     for df in (actual_rev, forecast_rev)
-        df.formulation = map(x -> formulation_label_map[x], df.formulation)
+        df.formulation = map(
+            x -> NEMStorageUnderUncertainty.formulation_label_map[x], df.formulation
+        )
         df.label = fill("", size(df)[1])
         df[df.param .!= "", :label] .=
             df[df.param .!= "", :formulation] .* " [" .* df[df.param .!= "", :param] .* "]"
@@ -59,7 +54,8 @@ function _makie_plot_all(
                 c for c in cgrad(
                     seq_colormaps[i],
                     length([
-                        sim for sim in sims if contains(sim, formulation_label_map[f])
+                        sim for sim in sims if
+                        contains(sim, NEMStorageUnderUncertainty.formulation_label_map[f])
                     ]);
                     categorical=true,
                     alpha=0.8,
@@ -75,7 +71,7 @@ function _makie_plot_all(
         groups = [findfirst(x -> x == sim, sims) for sim in df.label]
         ax = Axis(
             fig[1, 1];
-            xticks=(1:length(lookaheads), lookaheads),
+            xticks=(1:length(lookaheads), lookaheads .* " min"),
             title,
             ylabel=ylabel,
             yscale=yscale,

@@ -1,11 +1,3 @@
-plot_title_map = Dict(
-    "arbitrage_no_degradation" => "Arbitrage",
-    "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",
-    "arbitrage_throughputpenalty_no_degradation" => "TP Penalty (AUD/MWh)",
-    "arbitrage_capcontracted_no_degradation" => "Cap + TP Penalty (MW)",
-    "arbitrage_discounted_no_degradation" => "Discounting",
-)
-
 """
 Creates and sets a custom CairoMakie theme.
 """
@@ -56,3 +48,19 @@ function sort_by_power_capacities(data::DataFrame, col::Symbol)
     end
     return data
 end
+
+plot_title_map = Dict(
+    "arbitrage_no_degradation" => "Arbitrage",
+    "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",
+    "arbitrage_throughputpenalty_no_degradation" => "TP Penalty (AUD/MWh)",
+    "arbitrage_capcontracted_no_degradation" => "Cap + TP Penalty (MW)",
+    "arbitrage_discounted_no_degradation" => "Discounting + TP Pen.",
+)
+
+formulation_label_map = Dict(
+    "arbitrage_no_degradation" => "Arbitrage",
+    "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
+    "arbitrage_throughputlimited_no_degradation" => "TP Limited",
+    "arbitrage_capcontracted_no_degradation" => "Cap + TP Pen.",
+    "arbitrage_discounted_no_degradation" => "Discounting + TP Pen.",
+)

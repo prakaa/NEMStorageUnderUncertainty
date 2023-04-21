@@ -3,6 +3,29 @@ using NEMStorageUnderUncertainty
 using CairoMakie
 using JLD2
 
+function add_legend!(
+    fig::Figure,
+    x_loc,
+    y_loc,
+    value_colors::Vector{PolyElement},
+    value_labels::Vector{String},
+    value_title::String,
+)
+    v_lg = [
+        PolyElement(; polycolor=:transparent, strokecolor=c, strokewidth=1) for
+        c in (:gray, :black)
+    ]
+    Legend(
+        fig[y_loc, x_loc],
+        [v_lg, value_colors],
+        [["Value of perfect foresight", "Value of perfect information"], value_labels],
+        ["Values", value_title];
+        framevisible=false,
+        patchcolor="#f0f0f0",
+    )
+    return nothing
+end
+
 function _makie_plot_each_formulation(
     plot_data::DataFrame, title::String, yscale::Function, fillto::Float64
 )
@@ -13,18 +36,18 @@ function _makie_plot_each_formulation(
     ]
     v_pf_colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true, alpha=0.8)]
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
-    ylabel = "Revenue reduction (% of perfect foresight revenue)"
+    ylabel = "Value (% of perfect foresight revenue)"
     ax = Axis(
         fig[1, 1];
         xticks=(1:length(bess_mw), string.(round.(Int, bess_mw)) .* " MW"),
-        title,
+        yticks=(range(0, 100; step=20), string.(range(0, 100; step=20))),
         ylabel=ylabel,
         yscale=yscale,
     )
     barplot!(
         ax,
         xs,
-        plot_data.vpf_per .* -1;
+        plot_data.vpf_per;
         dodge=groups,
         color=v_pf_colors[groups],
         fillto=fillto,
@@ -34,27 +57,17 @@ function _makie_plot_each_formulation(
     barplot!(
         ax,
         xs,
-        plot_data.vpi_per .* -1;
+        plot_data.vpi_per;
         dodge=groups,
         color=:transparent,
         fillto=fillto,
         strokewidth=1,
     )
-    ylims!(ax, -100.0, -1.0)
+    ylims!(ax, 0.0, 100.0)
     # Legend
     lk_lg = [PolyElement(; polycolor=v_pf_colors[i]) for i in 1:length(lookaheads)]
-    v_lg = [
-        PolyElement(; polycolor=:transparent, strokecolor=c, strokewidth=1) for
-        c in (:gray, :black)
-    ]
-    Legend(
-        fig[1, 2],
-        [v_lg, lk_lg],
-        [["Perfect foresight", "Perfect information"], lookaheads],
-        ["Value of:", "Lookaheads\n(minutes)"];
-        framevisible=false,
-        patchcolor="#f0f0f0",
-    )
+    add_legend!(fig, 2, 1, lk_lg, lookaheads .* " min", "Lookahead\n(minutes)")
+    Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
     return fig
 end
 
@@ -67,11 +80,12 @@ function _makie_plot_across_formulation(
     colors,
 )
     title = string(round(Int, mw_capacity)) * " MW"
-    ylabel = "Revenue reduction\n(% of perfect foresight revenue)"
+    ylabel = "Value\n(% of perfect foresight revenue)"
     lookaheads = unique(plot_data.lookahead)
     ax = Axis(
         fig[position, 1];
         xticks=(1:length(lookaheads), string.(lookaheads) .* " min"),
+        yticks=(range(0, 100; step=20), string.(range(0, 100; step=20))),
         title,
         ylabel=ylabel,
     )
@@ -80,7 +94,7 @@ function _makie_plot_across_formulation(
     barplot!(
         ax,
         xs,
-        plot_data.vpf_per .* -1;
+        plot_data.vpf_per;
         dodge=groups,
         color=colors[groups],
         fillto=0.0,
@@ -90,25 +104,18 @@ function _makie_plot_across_formulation(
     barplot!(
         ax,
         xs,
-        plot_data.vpi_per .* -1;
+        plot_data.vpi_per;
         dodge=groups,
         color=:transparent,
         fillto=0.0,
         strokewidth=1,
     )
-    return ylims!(ax, -100.0, -1.0)
+    return ylims!(ax, 0.0, 100.0)
 end
 
 function plot_value_of_information_and_foresight_across_formulations(
     data_path::String, save_path::String
 )
-    formulation_label_map = Dict(
-        "arbitrage_no_degradation" => "Arb",
-        "arbitrage_throughputpenalty_no_degradation" => "TP Penalty",
-        "arbitrage_throughputlimited_no_degradation" => "TP Limited",
-        "arbitrage_capcontracted_no_degradation" => "Cap + TP Pen.",
-        "arbitrage_discounted_no_degradation" => "Discounting + TP Pen.",
-    )
     seq_colormaps = (:Hokusai2, :Tam)
     data_file = [f for f in readdir(data_path) if f == "vpi_vpf.jld2"][]
     all_data = load(joinpath(data_path, data_file))
@@ -116,9 +123,11 @@ function plot_value_of_information_and_foresight_across_formulations(
         energy = round(Int, unique(value.energy_capacity)[])
         state_data = all_data[state]
         plot_mw_capacities = (25, 100, 400)
-        plot_lookaheads = ("5", "60", "480", "900")
+        plot_lookaheads = ("5", "60", "240", "480", "900")
         fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 1000))
-        state_data.label = map(x -> formulation_label_map[x], state_data.formulation)
+        state_data.label = map(
+            x -> NEMStorageUnderUncertainty.formulation_label_map[x], state_data.formulation
+        )
         state_data.param = replace(state_data.param, missing => "")
         non_param_formulations = unique(state_data[state_data.param .== "", :formulation])
         param_formulations = unique(state_data[state_data.param .!= "", :formulation])
@@ -135,8 +144,9 @@ function plot_value_of_information_and_foresight_across_formulations(
                     c for c in cgrad(
                         seq_colormaps[i],
                         length([
-                            form for
-                            form in formulations if contains(form, formulation_label_map[f])
+                            form for form in formulations if contains(
+                                form, NEMStorageUnderUncertainty.formulation_label_map[f]
+                            )
                         ]);
                         categorical=true,
                         alpha=0.8,
@@ -151,20 +161,8 @@ function plot_value_of_information_and_foresight_across_formulations(
             mw_df.lookahead = parse.(Int64, mw_df.lookahead)
             _makie_plot_across_formulation(fig, mw_df, i, mw_capacity, formulations, colors)
         end
-        #Legend
         f_lg = [PolyElement(; polycolor=colors[i]) for i in 1:length(formulations)]
-        v_lg = [
-            PolyElement(; polycolor=:transparent, strokecolor=c, strokewidth=1) for
-            c in (:gray, :black)
-        ]
-        Legend(
-            fig[:, 2],
-            [v_lg, f_lg],
-            [["Perfect foresight", "Perfect information"], formulations],
-            ["Value of:", "Simulated formulation"];
-            framevisible=false,
-            patchcolor="#f0f0f0",
-        )
+        add_legend!(fig, 2, :, f_lg, formulations, "Simulated formulation")
         title = "$energy MWh BESS - VPI & VPF - $state Prices, 2021"
         Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
         filename = "$(state)_$(energy)_allformulations_vpi_vpf.pdf"
