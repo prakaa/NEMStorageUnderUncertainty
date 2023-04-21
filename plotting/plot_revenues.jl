@@ -44,25 +44,9 @@ function _makie_plot_all(
         df[df.param .== "", :label] .= df[df.param .== "", :formulation]
     end
     (sims, lookaheads) = (sort(unique(actual_rev.label)), unique(actual_rev.lookahead))
-    colors = []
-    seq_colormaps = (:Hokusai2, :Tam)
-    append!(colors, Makie.wong_colors()[3:(2 + length(non_param_formulations))])
-    for (i, f) in enumerate(param_formulations)
-        append!(
-            colors,
-            [
-                c for c in cgrad(
-                    seq_colormaps[i],
-                    length([
-                        sim for sim in sims if
-                        contains(sim, NEMStorageUnderUncertainty.formulation_label_map[f])
-                    ]);
-                    categorical=true,
-                    alpha=0.8,
-                )
-            ],
-        )
-    end
+    colors = NEMStorageUnderUncertainty.generate_formulation_colors(
+        param_formulations, non_param_formulations, sims
+    )
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
     for (stroke_col, bar_colors, df) in
         zip((:gray, :black), (colors, :transparent), (actual_rev, forecast_rev))
@@ -73,6 +57,7 @@ function _makie_plot_all(
             fig[1, 1];
             xticks=(1:length(lookaheads), lookaheads .* " min"),
             title,
+            xlabel="Lookahead",
             ylabel=ylabel,
             yscale=yscale,
         )
@@ -142,7 +127,7 @@ function _makie_plot(
     return fig
 end
 
-function plot_revenues_across_formulations(
+function plot_revenues_for_each_formulation(
     data_path::String, percentage_of_perfect_foresight::Bool, save_path::String
 )
     data_files = [f for f in readdir(data_path) if contains(f, "summary_results")]
@@ -206,7 +191,7 @@ function plot_revenues_across_formulations(
     end
 end
 
-function plot_revenues_all_formulations(data_path::String, save_path::String)
+function plot_revenues_across_formulations(data_path::String, save_path::String)
     data_files = [f for f in readdir(data_path) if contains(f, "summary_results")]
     for file in data_files
         state = string(match(r"([A-Z]{2,3})_.*", file).captures[])
@@ -232,9 +217,9 @@ end
 @assert ispath(data_path) "Results data not compiled. Run 'make compile_results'."
 
 NEMStorageUnderUncertainty.set_project_plot_theme!()
-plot_revenues_all_formulations(joinpath("results", "data"), plot_path)
+plot_revenues_across_formulations(joinpath("results", "data"), plot_path)
 for percentage_of_perfect_foresight in (false, true)
-    plot_revenues_across_formulations(
+    plot_revenues_for_each_formulation(
         joinpath("results", "data"), percentage_of_perfect_foresight, plot_path
     )
 end

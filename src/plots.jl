@@ -49,6 +49,43 @@ function sort_by_power_capacities(data::DataFrame, col::Symbol)
     return data
 end
 
+"""
+Generates Vector of colors used when plotting all formulations.
+
+# Arguments
+
+  * `param_formulations`: Name of formulations that take parameters
+  * `non_param_formulations`: Name of formulations that do not take parameters
+  * `sims`: Name of all simulations, i.e. formulations along with parameters
+
+"""
+function generate_formulation_colors(
+    param_formulations::Vector{String},
+    non_param_formulations::Vector{String},
+    sims::Vector{String},
+)
+    colors = []
+    seq_colormaps = (:Hokusai2, :Tam)
+    append!(colors, Makie.wong_colors()[3:(2 + length(non_param_formulations))])
+    for (i, f) in enumerate(param_formulations)
+        append!(
+            colors,
+            [
+                c for c in cgrad(
+                    seq_colormaps[i],
+                    length([
+                        sim for sim in sims if
+                        contains(sim, NEMStorageUnderUncertainty.formulation_label_map[f])
+                    ]);
+                    categorical=true,
+                    alpha=0.8,
+                )
+            ],
+        )
+    end
+    return colors
+end
+
 plot_title_map = Dict(
     "arbitrage_no_degradation" => "Arbitrage",
     "arbitrage_throughputlimited_no_degradation" => "TP Limited (100 MWh/day)",

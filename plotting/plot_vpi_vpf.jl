@@ -116,7 +116,6 @@ end
 function plot_value_of_information_and_foresight_across_formulations(
     data_path::String, save_path::String
 )
-    seq_colormaps = (:Hokusai2, :Tam)
     data_file = [f for f in readdir(data_path) if f == "vpi_vpf.jld2"][]
     all_data = load(joinpath(data_path, data_file))
     for (state, value) in pairs(all_data)
@@ -134,35 +133,19 @@ function plot_value_of_information_and_foresight_across_formulations(
         state_data[state_data.param .!= "", :label] =
             state_data[state_data.param .!= "", :label] .* " [" .*
             uppercasefirst.(string.(state_data[state_data.param .!= "", :param])) .* "]"
-        formulations = sort(unique(state_data.label))
-        colors = []
-        append!(colors, Makie.wong_colors()[3:(2 + length(non_param_formulations))])
-        for (i, f) in enumerate(param_formulations)
-            append!(
-                colors,
-                [
-                    c for c in cgrad(
-                        seq_colormaps[i],
-                        length([
-                            form for form in formulations if contains(
-                                form, NEMStorageUnderUncertainty.formulation_label_map[f]
-                            )
-                        ]);
-                        categorical=true,
-                        alpha=0.8,
-                    )
-                ],
-            )
-        end
+        sims = sort(unique(state_data.label))
+        colors = NEMStorageUnderUncertainty.generate_formulation_colors(
+            param_formulations, non_param_formulations, sims
+        )
         for (i, mw_capacity) in enumerate(plot_mw_capacities)
             energy = round(Int, unique(state_data.energy_capacity)[])
             mw_df = state_data[state_data.power_capacity .== mw_capacity, :]
             mw_df = mw_df[mw_df.lookahead .∈ (plot_lookaheads,), :]
             mw_df.lookahead = parse.(Int64, mw_df.lookahead)
-            _makie_plot_across_formulation(fig, mw_df, i, mw_capacity, formulations, colors)
+            _makie_plot_across_formulation(fig, mw_df, i, mw_capacity, sims, colors)
         end
-        f_lg = [PolyElement(; polycolor=colors[i]) for i in 1:length(formulations)]
-        add_legend!(fig, 2, :, f_lg, formulations, "Simulated formulation")
+        f_lg = [PolyElement(; polycolor=colors[i]) for i in 1:length(sims)]
+        add_legend!(fig, 2, :, f_lg, sims, "Simulated formulation")
         title = "$energy MWh BESS - VPI & VPF - $state Prices, 2021"
         Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
         filename = "$(state)_$(energy)_allformulations_vpi_vpf.pdf"
