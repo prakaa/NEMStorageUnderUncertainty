@@ -167,7 +167,7 @@ function plot_value_of_information_and_foresight_across_formulations(
         )
         title = "$energy MWh BESS - VPI & VPF - $state Prices, 2021"
         Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
-        filename = "$(state)_$(energy)_allformulations_vpi_vpf.png"
+        filename = "$(state)_$(energy)_allformulations_vpi_vpf.pdf"
         save(joinpath(save_path, filename), fig; pt_per_unit=1)
     end
 end
