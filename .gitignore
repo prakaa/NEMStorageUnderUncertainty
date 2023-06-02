@@ -13,7 +13,9 @@ data_scripts/NEMSUU_venv
 
 # data
 data/*
-price-error-analyses/**/*.parquet
+price-and-price-error-analyses/**/*.parquet
+price-and-price-error-analyses/**/*.CSV
+price-and-price-error-analyses/**/*.feather
 
 # simulation results
 simulations/**/*.jld2
