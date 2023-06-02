@@ -45,7 +45,7 @@ plt.style.use("matplotlibrc.mplstyle")
 
 # %%
 analysis_start = "2012/01/01 00:00:00"
-analysis_end = "2023/01/01 00:00:00"
+analysis_end = "2022/01/01 00:00:00"
 
 # %% [markdown]
 # ## Getting Data
@@ -79,6 +79,9 @@ prices = nemosis.dynamic_data_compiler(
 )
 prices = prices[["SETTLEMENTDATE", "REGIONID", "RRP"]]
 
+# %% [markdown]
+# ### Define market price caps, with start and end dates
+
 # %%
 # Reliability Settings from 1 July 2012 - AEMC
 # then https://wattclarity.com.au/other-resources/glossary/market-price-cap/
@@ -92,9 +95,13 @@ mpcs = [
     ["2018-07-01 00:05:00", "2019-07-01 00:00:00", 14500],
     ["2019-07-01 00:05:00", "2020-07-01 00:00:00", 14700],
     ["2020-07-01 00:05:00", "2021-07-01 00:00:00", 15000],
-    ["2021-07-01 00:05:00", "2022-07-01 00:00:00", 15100],
-    ["2022-07-01 00:05:00", "2022-07-01 00:00:00", 15500],
+    ["2021-07-01 00:05:00", "2022-01-01 00:00:00", 15100],
+    # ["2021-07-01 00:05:00", "2022-07-01 00:00:00", 15100],
+    # ["2022-07-01 00:05:00", "2022-07-01 00:00:00", 15500],
 ]
+
+# %% [markdown]
+# ## Daily Price Spread, 2012-2021
 
 # %%
 # daily min max
@@ -111,8 +118,8 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
     ):
         region_spread = daily_spread.query("REGIONID == @region").set_index("YMD")
         rolling_days = 60
-        rolling_avg_60day = (
-            region_spread["log10(Spread)"].rolling(f"{rolling_days}D").mean()
+        rolling = region_spread["log10(Spread)"].rolling(
+            f"{rolling_days}D", center=True
         )
         ax.plot(
             region_spread["log10(Spread)"].index,
@@ -120,9 +127,8 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
             lw=1,
             color=color_cycle[i + 1],
         )
-        ax.plot(
-            rolling_avg_60day.index, rolling_avg_60day, ls="-.", color=color_cycle[-2]
-        )
+        rolling_mean = rolling.mean()
+        ax.plot(rolling_mean.index, rolling_mean, ls="-.", color=color_cycle[-2])
         ax.axvline(
             np.datetime64("2021-10-01 00:00:00"),
             ls="--",
@@ -147,7 +153,7 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
             color=color_cycle[0],
             lw=2,
             ls="--",
-            label="Maximum potential (cap - floor)",
+            label="Maximum Potential (cap - floor)",
         ),
         matplotlib.lines.Line2D(
             [0], [0], color="black", lw=2, ls="--", label="5MS Commencement"
@@ -158,15 +164,19 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
             color=color_cycle[-2],
             lw=2,
             ls="--",
-            label=f"Rolling avg. ({rolling_days} days)",
+            label=f"Rolling Avg. ({rolling_days} days)",
         ),
     ]
     fig.legend(
         handles=custom_lines, loc="lower center", bbox_to_anchor=(0.5, -0.05), ncol=3
     )
-    fig.suptitle("Daily Price Spread, 2012-2022", fontsize=20)
+    fig.suptitle("Daily Price Spread, 2012-2021", fontsize=20)
     return fig
 
 
+# %%
+
 fig = plot_daily_price_spread(prices)
-fig.savefig("volatility.pdf")
+if not (dir := Path("plots", "historical", "spreads")).exists():
+    dir.mkdir(parents=True)
+fig.savefig(Path(dir, "daily_price_spreads_2012_2021.pdf"))
