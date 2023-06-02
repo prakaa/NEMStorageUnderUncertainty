@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Price Error Analysis, 2021
+# # Price Error Counts and Discount Curve Fitting, 2021
 
 # %% [markdown]
 # ## Key imports
@@ -20,12 +20,6 @@ from nemseer import compile_data, download_raw_data, generate_runtimes
 # data wrangling libraries
 import numpy as np
 import pandas as pd
-
-# interactive plotting
-from plotly.subplots import make_subplots
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
 
 # static plotting
 import matplotlib
@@ -48,15 +42,6 @@ warnings.filterwarnings("ignore")
 # ## Plot Styling
 
 # %%
-nemseer_template = dict(
-    layout=go.Layout(
-        font_family="Source Sans Pro",
-        title_font_size=24,
-        title_x=0.05,
-        plot_bgcolor="#f0f0f0",
-        colorway=px.colors.qualitative.Bold,
-    )
-)
 plt.style.use("matplotlibrc.mplstyle")
 
 # %% [markdown]
@@ -77,22 +62,12 @@ analysis_end = "2022/01/01 00:00:00"
 # %%
 nemosis_cache = Path("nemosis_cache/")
 if not nemosis_cache.exists():
-    nemosis_cache.mkdir()
+    nemosis_cache.mkdir(parents=True)
 
 # %%
+print("Caching NEMOSIS price data")
 nemosis.cache_compiler(
     analysis_start, analysis_end, "DISPATCHPRICE", nemosis_cache, fformat="parquet"
-)
-
-# %% [markdown]
-# ### Obtaining actual demand data from `NEMOSIS`
-#
-# We can download `DISPATCHREGIONSUM` to get actual demand values used in dispatch (`TOTALDEMAND`).
-#
-
-# %%
-nemosis.cache_compiler(
-    analysis_start, analysis_end, "DISPATCHREGIONSUM", nemosis_cache, fformat="parquet"
 )
 
 # %% [markdown]
@@ -101,6 +76,7 @@ nemosis.cache_compiler(
 # We will download `PRICE` to access the `RRP` field in `PREDISPATCH` forecasts, and `REGIONSOLUTION` to access the `RRP` field in `P5MIN` forecasts. We'll cache it so that it's ready for computation.
 
 # %%
+print("Caching NEMSEER price forecast data")
 download_raw_data(
     "PREDISPATCH",
     "PRICE",
@@ -108,7 +84,6 @@ download_raw_data(
     forecasted_start=analysis_start,
     forecasted_end=analysis_end,
 )
-
 
 download_raw_data(
     "P5MIN",
@@ -268,10 +243,11 @@ def calculate_price_error(analysis_start: str, analysis_end: str) -> pd.DataFram
 
 
 # %%
+print("Calculating price errors")
 price_error = calculate_price_error(analysis_start, analysis_end)
 
 # %% [markdown]
-# ## Price Forecast Error Analysis
+# ## Price Forecast Error Counts
 #
 # ### Across select ahead timeframes
 
@@ -288,45 +264,6 @@ aheads = [
     timedelta(days=1, hours=8),
 ]
 
-
-# %% [markdown]
-# ### Rugplots of Raw Errors
-
-
-# %%
-def plot_rugplots(price_error: pd.DataFrame) -> None:
-    if not Path("error-rugs").exists():
-        Path("error-rugs").mkdir()
-    for region in price_error.REGIONID.unique():
-        region_df = price_error.query("REGIONID==@region")
-        box_df = region_df[region_df.ahead_time.isin(aheads)]
-        counts = {}
-        box_df.loc[:, "ahead_time"] = (
-            (box_df.ahead_time.dt.days * 24 + box_df.ahead_time.dt.seconds / 3600)
-            .round(1)
-            .astype(str)
-        )
-        for at in box_df.ahead_time.unique():
-            at_df = box_df[box_df.ahead_time == at]
-            counts[at] = len(at_df)
-        box_df.ahead_time = box_df.ahead_time.replace(
-            {at: (at + f", [{counts[at]}]") for at in counts.keys()}
-        )
-        fig, ax = plt.subplots()
-        sns.stripplot(box_df, x="ahead_time", y="error", ax=ax, size=2, jitter=True)
-        fig.suptitle(f"{region} - Price Forecast Error, 2021", fontsize=18)
-        ax.set_ylabel("Price Forecast Error ($/MW/hr)")
-        ax.set_xlabel("Ahead Time (hours), [# of samples]")
-        ax.xaxis.set_tick_params(rotation=45)
-        ax.set_title("Error = Actual - Forecast", fontsize=12)
-        fig.tight_layout()
-        fig.savefig(Path("error-rugs", f"{region}_2021.png"), dpi=600)
-    return None
-
-
-plot_rugplots(price_error)
-
-
 # %% [markdown]
 # ### Errors greater than a threshold - region by region
 # #### By region
@@ -334,8 +271,8 @@ plot_rugplots(price_error)
 def count_errors_above_threshold_by_region(
     price_error: pd.DataFrame, threshold: float
 ) -> None:
-    if not Path("error-threshold").exists():
-        Path("error-threshold").mkdir()
+    if not Path("2021", "error-threshold").exists():
+        Path("2021", "error-threshold").mkdir(parents=True)
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for region in price_error.REGIONID.unique():
         region_df = price_error.query("REGIONID==@region")
@@ -375,25 +312,29 @@ def count_errors_above_threshold_by_region(
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
         fig.tight_layout()
         fig.savefig(
-            Path("error-threshold", f"{region}_percent_above_{threshold}_2021.png"),
+            Path(
+                "2021",
+                "error-threshold",
+                f"{region}_percent_above_{threshold}_2021.png",
+            ),
             dpi=600,
         )
         return None
 
 
 for thresh in (300.0, 1000.0, 10000.0):
+    print(f"Counting price errors above ${thresh}/MWh")
     count_errors_above_threshold_by_region(price_error, thresh)
 
 # %% [markdown]
 # ### Errors greater than a threshold - all regions
 
-
 # %%
 def count_errors_above_threshold(
     price_error: pd.DataFrame, threshold: float, results: dict
 ) -> dict:
-    if not Path("error-threshold").exists():
-        Path("error-threshold").mkdir()
+    if not Path("2021", "error-threshold").exists():
+        Path("2021", "error-threshold").mkdir(parents=True)
     all_reg_fig = plt.figure(figsize=(12, 9))
     ax1 = plt.subplot2grid(shape=(2, 6), loc=(0, 0), colspan=2, fig=all_reg_fig)
     ax2 = plt.subplot2grid(
@@ -449,7 +390,9 @@ def count_errors_above_threshold(
         f"Price Forecast Errors Above {threshold} $/MWh, 2021", fontsize=24
     )
     all_reg_fig.savefig(
-        Path("error-threshold", f"all_regions_percent_above_{threshold}_2021.png"),
+        Path(
+            "2021", "error-threshold", f"all_regions_percent_above_{threshold}_2021.png"
+        ),
         dpi=600,
     )
     return results
@@ -457,11 +400,12 @@ def count_errors_above_threshold(
 
 thresh_frac = {}
 for thresh in (300.0, 1000.0, 10000.0):
+    print(f"Counting price errors above ${thresh}/MWh for all regions")
     counts = count_errors_above_threshold(price_error, thresh, thresh_frac)
 
 # %% [markdown]
-# ## Discounting Curve Fitting
-
+# ## Discount Curve Fitting
+# Fit counts of errors above a threshold to hyperbolic and exponential functions
 
 # %%
 def exponential_discount(times, rate):
@@ -473,47 +417,68 @@ def hyperbolic_discount(times, rate):
 
 
 # %%
-curve_fit_dir = Path("discount-curve-fitting")
-if not curve_fit_dir.exists():
-    curve_fit_dir.mkdir()
-(exp_params, hyp_params, exp_rmsds, hyp_rmsds) = ([], [], [], [])
-for threshold in counts.keys():
-    df = counts[threshold]["NSW1"]
-    # only day-ahead or shorter
-    df = df.iloc[1:, :]
-    times = df.index.str.extract("([0-9\.]*)", expand=False).astype(float).values
-    max_scaled_counts = (1 - df.frac / df.frac.max()).values
 
-    [exp_fit], _ = scipy.optimize.curve_fit(
-        exponential_discount, times, max_scaled_counts
-    )
-    exp_params.append(exp_fit)
-    [hyp_fit], _ = scipy.optimize.curve_fit(
-        hyperbolic_discount, times, max_scaled_counts
-    )
-    hyp_params.append(hyp_fit)
+print("Fitting functions to data")
+curve_fit_dir = Path("2021", "discount-curve-fitting")
 
-    exp_curve = exponential_discount(times, exp_fit)
-    hyp_curve = hyperbolic_discount(times, hyp_fit)
-    exp_rmsd = np.sqrt(
-        np.sum(np.subtract(exp_curve, max_scaled_counts) ** 2) / len(max_scaled_counts)
-    )
-    exp_rmsds.append(exp_rmsd)
-    hyp_rmsd = np.sqrt(
-        np.sum(np.subtract(hyp_curve, max_scaled_counts) ** 2) / len(max_scaled_counts)
-    )
-    hyp_rmsds.append(hyp_rmsd)
-    fig, ax = plt.subplots()
-    ax.plot(times, max_scaled_counts, label="Counts (max-scaled)")
-    ax.plot(times, exp_curve, label="Exponential discount fit")
-    ax.plot(times, hyp_curve, label="Hyperbolic discount fit")
-    ax.set_title(
-        f"Fitting Discount Functions to Price Error Counts (>= ${threshold}/MWh), NSW 2021"
-    )
-    ax.set_xlabel("Hours ahead")
-    ax.set_ylabel("1 - Max-scaled/Discount factor")
-    ax.legend()
-    fig.savefig(Path(curve_fit_dir, f"curve_fits_{threshold}.png"), dpi=600)
+
+def fit_and_plot_discount_functions_across_thresholds(
+    counts: dict, curve_fit_dir: str
+) -> Tuple[list, list, list, list]:
+    """
+    Only fit for errors within day-ahead
+    """
+    if not curve_fit_dir.exists():
+        curve_fit_dir.mkdir(parents=True)
+    (exp_params, hyp_params, exp_rmsds, hyp_rmsds) = ([], [], [], [])
+    for threshold in counts.keys():
+        df = counts[threshold]["NSW1"]
+        # only day-ahead or shorter
+        df = df.iloc[1:, :]
+        times = df.index.str.extract("([0-9\.]*)", expand=False).astype(float).values
+        max_scaled_counts = (1 - df.frac / df.frac.max()).values
+
+        [exp_fit], _ = scipy.optimize.curve_fit(
+            exponential_discount, times, max_scaled_counts
+        )
+        exp_params.append(exp_fit)
+        [hyp_fit], _ = scipy.optimize.curve_fit(
+            hyperbolic_discount, times, max_scaled_counts
+        )
+        hyp_params.append(hyp_fit)
+
+        exp_curve = exponential_discount(times, exp_fit)
+        hyp_curve = hyperbolic_discount(times, hyp_fit)
+        exp_rmsd = np.sqrt(
+            np.sum(np.subtract(exp_curve, max_scaled_counts) ** 2)
+            / len(max_scaled_counts)
+        )
+        exp_rmsds.append(exp_rmsd)
+        hyp_rmsd = np.sqrt(
+            np.sum(np.subtract(hyp_curve, max_scaled_counts) ** 2)
+            / len(max_scaled_counts)
+        )
+        hyp_rmsds.append(hyp_rmsd)
+        fig, ax = plt.subplots()
+        ax.plot(times, max_scaled_counts, label="Counts (max-scaled)")
+        ax.plot(times, exp_curve, label="Exponential discount fit")
+        ax.plot(times, hyp_curve, label="Hyperbolic discount fit")
+        ax.set_title(
+            f"Fitting Discount Functions to Price Error Counts (>= ${threshold}/MWh), NSW 2021"
+        )
+        ax.set_xlabel("Hours ahead")
+        ax.set_ylabel("1 - Max-scaled/Discount factor")
+        ax.legend()
+        fig.savefig(Path(curve_fit_dir, f"curve_fits_{threshold}.png"), dpi=600)
+    return (exp_params, hyp_params, exp_rmsds, hyp_rmsds)
+
+
+(
+    exp_params,
+    hyp_params,
+    exp_rmsds,
+    hyp_rmsds,
+) = fit_and_plot_discount_functions_across_thresholds(counts, curve_fit_dir)
 
 summary = pd.DataFrame(
     {
