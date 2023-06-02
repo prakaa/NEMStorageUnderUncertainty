@@ -110,7 +110,10 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
         zip(axes.flat, [x for x in daily_spread.REGIONID if x != "TAS1"])
     ):
         region_spread = daily_spread.query("REGIONID == @region").set_index("YMD")
-        rolling_avg_60day = region_spread["log10(Spread)"].rolling("60D").mean()
+        rolling_days = 60
+        rolling_avg_60day = (
+            region_spread["log10(Spread)"].rolling(f"{rolling_days}D").mean()
+        )
         ax.plot(
             region_spread["log10(Spread)"].index,
             region_spread["log10(Spread)"],
@@ -155,7 +158,7 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
             color=color_cycle[-2],
             lw=2,
             ls="--",
-            label="Rolling avg. (60 days)",
+            label=f"Rolling avg. ({rolling_days} days)",
         ),
     ]
     fig.legend(
