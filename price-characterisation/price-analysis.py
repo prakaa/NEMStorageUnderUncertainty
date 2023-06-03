@@ -7,14 +7,12 @@
 # %%
 # standard libraries
 import logging
-from datetime import datetime, timedelta
 from pathlib import Path
 
 # NEM data libraries
 # NEMOSIS for actual demand data
 # NEMSEER for forecast demand data
 import nemosis
-from nemseer import compile_data, download_raw_data, generate_runtimes
 
 # data wrangling libraries
 import numpy as np
@@ -24,7 +22,6 @@ import pandas as pd
 # static plotting
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # silence NEMSEER and NEMOSIS logging
 logging.getLogger("nemosis").setLevel(logging.WARNING)
@@ -110,11 +107,18 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
     daily_regional = prices.groupby(["YMD", "REGIONID"])["RRP"]
     daily_spread = (daily_regional.max() - daily_regional.min()).reset_index()
     daily_spread["log10(Spread)"] = np.log10(daily_spread.RRP)
-    fig, axes = plt.subplots(2, 2, sharex=True, sharey=True, dpi=600)
-    fig.set_size_inches(10, 7)
+    fig, axes = plt.subplots(
+        2,
+        2,
+        sharex=True,
+        sharey=True,
+        dpi=600,
+        figsize=(10, 6),
+        facecolor=matplotlib.rcParams.get("axes.facecolor"),
+    )
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for i, (ax, region) in enumerate(
-        zip(axes.flat, [x for x in daily_spread.REGIONID if x != "TAS1"])
+        zip(axes.flat, [x for x in daily_spread.REGIONID.unique() if x != "TAS1"])
     ):
         region_spread = daily_spread.query("REGIONID == @region").set_index("YMD")
         rolling_days = 60
@@ -132,6 +136,7 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
         ax.axvline(
             np.datetime64("2021-10-01 00:00:00"),
             ls="--",
+            lw=0.8,
             color="black",
         )
         for mpc in mpcs:
@@ -141,6 +146,7 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
                 xs,
                 np.repeat(max_spread, len(xs)),
                 ls="--",
+                lw=0.8,
                 color=color_cycle[0],
             )
         ax.set_title(region[0:-1])
@@ -167,16 +173,89 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
             label=f"Rolling Avg. ({rolling_days} days)",
         ),
     ]
-    fig.legend(
-        handles=custom_lines, loc="lower center", bbox_to_anchor=(0.5, -0.05), ncol=3
+    leg = fig.legend(
+        handles=custom_lines,
+        loc="lower center",
+        bbox_to_anchor=(0.5, -0.05),
+        ncol=3,
     )
-    fig.suptitle("Daily Price Spread, 2012-2021", fontsize=20)
+    leg.get_frame().set_linewidth(0.0)
+    if rolling_mean.index.year[-1] == 2023:
+        end_year = 2022
+    else:
+        end_year = 2021
+    fig.suptitle(f"Daily Energy Price Spread, 2012-{end_year}", fontsize=20)
     return fig
 
 
 # %%
 
 fig = plot_daily_price_spread(prices)
-if not (dir := Path("plots", "historical", "spreads")).exists():
-    dir.mkdir(parents=True)
-fig.savefig(Path(dir, "daily_price_spreads_2012_2021.pdf"))
+if not (plot_dir := Path("plots", "historical", "spreads")).exists():
+    plot_dir.mkdir(parents=True)
+fig.savefig(
+    Path(plot_dir, "historical_daily_price_spreads.pdf"), facecolor=fig.get_facecolor()
+)
+
+# %% [markdown]
+# ## Volatility, 2012-2021
+
+# %%
+
+
+def plot_volatility(prices: pd.DataFrame) -> None:
+    fig, ax = plt.subplots(
+        1,
+        1,
+        sharex=True,
+        sharey=True,
+        dpi=600,
+        facecolor=matplotlib.rcParams.get("axes.facecolor"),
+    )
+    fig.set_size_inches(10, 5)
+    color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    for i, region in enumerate([x for x in prices.REGIONID.unique() if x != "TAS1"]):
+        region_prices = (
+            prices.query("REGIONID == @region").set_index("SETTLEMENTDATE").sort_index()
+        )
+        rolling_days = 30
+        rolling = region_prices.rolling(f"{rolling_days}D", center=True)
+        log_rolling_std = np.log10(rolling.std())
+        ax.plot(
+            log_rolling_std.index,
+            log_rolling_std,
+            color=color_cycle[i + 1],
+            lw=0.9,
+            label=region,
+        )
+    ax.axvline(
+        np.datetime64("2021-10-01 00:00:00"),
+        ls="--",
+        lw=0.8,
+        color="black",
+        label="5MS Commencement",
+    )
+    ax.set_ylabel("$log_{10}(\sigma_{rolling})$", usetex=True)
+    if log_rolling_std.index.year[-1] == 2023:
+        end_year = 2022
+    else:
+        end_year = 2021
+    leg = fig.legend(bbox_to_anchor=(0.5, -0.07), loc="lower center", ncols=5)
+    leg.get_frame().set_linewidth(0.0)
+    ax.set_title(f"Energy Price Volatility, 2012-{end_year}\n", fontsize=20)
+    fig.text(
+        0.5,
+        1.04,
+        f"Rolling standard deviation ({rolling_days} days)",
+        transform=ax.transAxes,
+        horizontalalignment="center",
+    )
+    return fig
+
+
+# %%
+
+fig = plot_volatility(prices)
+if not (plot_dir := Path("plots", "historical", "volatility")).exists():
+    plot_dir.mkdir(parents=True)
+fig.savefig(Path(plot_dir, "historical_volatility.pdf"), facecolor=fig.get_facecolor())
