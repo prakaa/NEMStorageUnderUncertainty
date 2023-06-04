@@ -259,3 +259,56 @@ fig = plot_volatility(prices)
 if not (plot_dir := Path("plots", "historical", "volatility")).exists():
     plot_dir.mkdir(parents=True)
 fig.savefig(Path(plot_dir, "historical_volatility.pdf"), facecolor=fig.get_facecolor())
+
+# %% [markdown]
+# ## NSW Time-of-day Price Percentiles, 2021
+
+# %%
+
+
+def plot_nsw_price_percentiles(prices: pd.DataFrame) -> None:
+    fig, ax = plt.subplots(
+        1,
+        1,
+        sharex=True,
+        sharey=True,
+        dpi=600,
+        facecolor=matplotlib.rcParams.get("axes.facecolor"),
+    )
+    fig.set_size_inches(7, 5)
+    color = plt.rcParams["axes.prop_cycle"].by_key()["color"][1]
+    nsw_2021_prices = (
+        prices.query("REGIONID == 'NSW1'").set_index("SETTLEMENTDATE").sort_index()
+    )["2021-01-01 00:05:00":"2022-01-01 00:00:00"]
+    nsw_2021_prices["TOD"] = nsw_2021_prices.index.strftime("%H:%M")
+    nsw_2021_prices["Month"] = nsw_2021_prices.index.month
+    tod_groupby = nsw_2021_prices.groupby("TOD")["RRP"]
+    tod_median = tod_groupby.quantile(0.5)
+    tod_median.index = pd.to_datetime(tod_median.index)
+    ax.plot(tod_median, color=color, label="Median")
+    tod_upper = tod_groupby.quantile(0.95)
+    tod_lower = tod_groupby.quantile(0.05)
+    ax.fill_between(
+        tod_median.index,
+        tod_lower,
+        tod_upper,
+        alpha=0.4,
+        facecolor="grey",
+        label=r"5$^{th}$-95$^{th}}$ percentiles",
+    )
+    ticks = ax.get_xticks()
+    ax.set_xticks(np.linspace(ticks[0], ticks[-1], 25))
+    ax.tick_params(rotation=90)
+    HMSFmt = matplotlib.dates.DateFormatter("%H:%M")
+    ax.xaxis.set_major_formatter(HMSFmt)
+    ax.set_ylabel("\$/MWh")
+    leg = fig.legend(bbox_to_anchor=(0.5, -0.07), loc="lower center", ncols=5)
+    leg.get_frame().set_linewidth(0.0)
+    ax.set_title("NSW Time-of-Day Energy Price Percentiles, 2021", fontsize=20)
+    return fig
+
+
+fig = plot_nsw_price_percentiles(prices)
+if not (plot_dir := Path("plots", "historical", "nsw")).exists():
+    plot_dir.mkdir(parents=True)
+fig.savefig(Path(plot_dir, "tod.pdf"), facecolor=fig.get_facecolor())
