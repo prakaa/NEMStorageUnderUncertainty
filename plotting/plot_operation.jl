@@ -19,8 +19,8 @@ end
 
 function _makie_plot(data_dict::Dict{String,DataFrame})
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 400))
-    ax1 = Axis(fig[1, 1], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using actual prices")
-    ax2 = Axis(fig[1, 2], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using forecast prices")
+    ax1 = Axis(fig[1, 1], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using actual prices", titlesize=18)
+    ax2 = Axis(fig[1, 2], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using forecast prices", titlesize=18)
     linkyaxes!(ax1, ax2)
     linkxaxes!(ax1, ax2)
     for (ax, dtype) in zip((ax1, ax2), ("actual", "forecast"))
@@ -29,12 +29,15 @@ function _makie_plot(data_dict::Dict{String,DataFrame})
             df_lk = df[df.lookahead_minutes.==lk, :]
             scatter!(ax, df_lk.actual_price, df_lk.revenue, label=string(lk), color=("#f0f0f0", 0.0), markersize=4, strokecolor=color, strokewidth=1.0)
         end
-        xs = 1000:15500
-        band!(ax, xs, -15500.0 * 100.0 / 12.0 - 100.0, fill(0.0, length(xs)), color=(:ivory4, 0.2))
-        band!(ax, xs, fill(0.0, length(xs)), xs .* 100.0 ./ 12.0, color=(:ivory3, 0.2))
+        xs = 500:15500
+        lower_band = -15500.0 * 100.0 / 12.0
+        band!(ax, xs, lower_band, fill(0.0, length(xs)), color=(:ivory4, 0.2))
+        band!(ax, xs, fill(0.0, length(xs)), xs .* 100.0 ./ 12.0 .- 1e3, color=(:ivory3, 0.2))
+        text!(ax, 1.55e4 + 5e2, 0.75e4; text="Lost opportunity", rotation=pi / 2, font="Source Sans Pro", align=(:left, :center), fontsize=9)
+        text!(ax, 1.55e4 + 5e2, lower_band + 0.75e4; text="Detrimental decision", rotation=pi / 2, font="Source Sans Pro", align=(:left, :center), fontsize=9)
     end
     fig[1, 3] = Legend(fig, ax1, "Lookahead\n(minutes)", framevisible=false)
-    fig[0, 1:2] = Label(fig, "100 MW/100 MWh BESS Operation", fontsize=22, font="Source Sans Pro")
+    fig[0, 1:2] = Label(fig, "100 MW/100 MWh BESS Arbitrage - BESS Revenue vs. NSW Energy Price", fontsize=22, font="Source Sans Pro")
     return fig
 end
 
