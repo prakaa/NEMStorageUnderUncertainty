@@ -367,7 +367,7 @@ for horizon, ax in zip((24, 1), axes.flatten()):
 
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
-fig.suptitle("NEM-wide Count of (Absolute Value) Price Forecast Errors", fontsize=16)
+fig.suptitle("NEM-wide Monthly Count of (Absolute Value) Price Forecast Errors", fontsize=16)
 axes[0].set_title("Within day-ahead horizon (PD & 5MPD)", loc="left", fontsize=10)
 axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
@@ -376,7 +376,7 @@ handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(
     handles,
     labels,
-    title="Absolute Value Price Error Intervals",
+    title="Absolute Value Price Forecast Error Intervals",
     bbox_to_anchor=(0.5, -0.1),
     ncol=4,
     loc="lower center",
