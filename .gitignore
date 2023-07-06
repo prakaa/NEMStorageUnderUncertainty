@@ -19,3 +19,6 @@ price-characterisation/**/*.feather
 
 # simulation results
 simulations/**/*.jld2
+
+# pdf view files
+**/.pdf-view-restore
