@@ -18,7 +18,7 @@ Though we are currently writing up the results from this study, you can still us
 
 All charts produced from the analysis of prices & price forecast errors in the NEM can be found [here](price-characterisation/plots). A couple of the most interesting charts are linked below.
 
-- [This chart](./price-characterisation/plots/historical/spreads/historical_daily_price_spreads.pdf) shows that historical daily price spreads ($p_{max} - p_{min}$ for each day) have been increasing over time in each region o f the NEM
+- [This chart](./price-characterisation/plots/historical/spreads/historical_daily_price_spreads.pdf) shows that historical daily price spreads ($p_{max} - p_{min}$ for each day) have been increasing over time in each region of the NEM
 - [This chart](./price-characterisation/plots/historical/nsw/tod.pdf) shows the median, 5th and 95th percentile prices in NSW for each dispatch interval in 2021 (i.e. by time of day)
 - [This chart](./price-characterisation/plots/historical/errors/price_errors_nemwide_2012_2021.pdf) shows how price forecast errors in the day-ahead and hour-ahead horizons have increased in the past few years. Months with a high number of large price errors do not appear to necessarily coincide with market or system events
 
