@@ -18,8 +18,14 @@ Though we are currently writing up the results from this study, you can still us
 All charts produced from the analysis of prices & price forecast errors in the NEM can be found [here](price-characterisation/plots). A couple of the most interesting charts are linked below.
 
 - [This chart](./price-characterisation/plots/historical/spreads/historical_daily_price_spreads.pdf) shows that historical daily price spreads ($p_{max} - p_{min}$ for each day) have been increasing over time in each region o f the NEM
-- [This chart](./price-characterisation/plots/historical/spreads/historical/nsw/tod.pdf) shows the median, 5th and 95th percentile prices in NSW for each dispatch interval in 2021 (i.e. by time of day)
+- [This chart](./price-characterisation/plots/historical/spreads/tod.pdf) shows the median, 5th and 95th percentile prices in NSW for each dispatch interval in 2021 (i.e. by time of day)
 - [This chart](./price-characterisation/plots/historical/errors/price_errors_nemwide_2012_2021.pdf) shows how price forecast errors in the day-ahead and hour-ahead horizons have increased in the past few years. Months with a high number of large price errors do not appear to necessarily coincide with market or system events
+
+### Source code installation
+
+1. Install poetry
+2. Use poetry within [price-characterisation](./price-characterisation) to install the required dependencies
+3. Run `.py` plot scripts
 
 ## Simulating storage operation under uncertainty
 
@@ -45,12 +51,18 @@ A variety of formulations (objective functions) are modelled. Refer to [this sec
 **Value of perfect information**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be in the *lookahead
 horizon*.
-$$VPI = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}$$
+
+```math
+VPI = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}$$
+```
 
 **Value of perfect foresight**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be *over the entire
 year*
-$$VPF = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}$$
+
+```math
+VPF = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}
+```
 
 ### Results
 
@@ -59,7 +71,7 @@ All charts produced from the analysis of simulation results can be found [here](
 - [This chart](results/plots/revenues/NSW_100.0MWh_100.0MW_allformulations_revenue.pdf) shows absolute revenues for a 1 hour duration BESS (100 MW/100 MWh) for different lookahead horizons and modelled formulations
 - [This chart](results/plots/operation/NSW_100MW_100MWh_Revenue_Lookahead.pdf) shows how under imperfect foresight, a 1 hour duration BESS can miss significant discharge opportunities or make very poor charge decisions
 - [This chart](results/plots/vpi_vpf/NSW_100_allformulations_vpi_vpf.pdf) shows VPIs and VPFs for BESS with durations of 15 minutes, 1 hour and 4 hours across lookaheads and modelled formulations
-  - [This chart](results/plots/throughput/NSW_100_arbitrage_throughputpenalty_no_degradation_600000_throughputs.pdf) shows the cumulative throughput of BES with durations of 15 minutes, 1 hour and 4 hours (all with modelled throughput penalty that amortises a BESS capital cost of 600,000 AUD/MWh across BESS lifetime throughput) across the modelled year (2021).
+- [This chart](results/plots/throughput/NSW_100_arbitrage_throughputpenalty_no_degradation_600000_throughputs.pdf) shows the cumulative throughput of BES with durations of 15 minutes, 1 hour and 4 hours (all with modelled throughput penalty that amortises a BESS capital cost of 600,000 AUD/MWh across BESS lifetime throughput) across the modelled year (2021).
 
 ### Source code installation
 
