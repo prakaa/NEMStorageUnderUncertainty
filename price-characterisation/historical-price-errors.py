@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Price Error Characterisation, 2021
+# # Historical Price Error Characterisation
 
 # %% [markdown]
 # ## Key imports
@@ -267,7 +267,7 @@ for i in range(0, 10, 1):
 # %% [markdown]
 # ## Price Forecast Error Analysis
 
-#%%
+# %%
 all_price_errors = []
 for parq in save_dir.iterdir():
     df = pd.read_parquet(parq)
@@ -281,7 +281,7 @@ all_price_errors_df = pd.concat(all_price_errors).sort_values("forecasted_time")
 
 
 def plot_counts_within_horizon(
-    ax: matplotlib.axes.Axes, price_errors_df: pd.DataFrame, horizon_hours: int
+    ax: matplotlib.axes.Axes, price_errors_df: pd.DataFrame, horizon_minutes: int
 ):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     bottom = np.zeros_like(pd.date_range("2011/12/31", "2021/11/30", freq="1M"), float)
@@ -289,7 +289,7 @@ def plot_counts_within_horizon(
     lower_threshold = 300.0
     count_df = price_errors_df.set_index("forecasted_time")
     count_df.error = count_df.error.abs()
-    count_df = count_df[count_df.ahead_time < timedelta(hours=horizon_hours)]
+    count_df = count_df[count_df.ahead_time < timedelta(minutes=horizon_minutes)]
     for upper_threshold, color in zip(thresholds, colors):
         threshold_df = count_df[
             (lower_threshold < count_df.error) & (upper_threshold >= count_df.error)
@@ -317,7 +317,6 @@ def annotate_ax(
     y_annot: float,
     annot_fontsize: float,
 ):
-
     annotation_xs = [
         datetime(2016, 5, 1),
         datetime(2016, 9, 1),
@@ -362,12 +361,14 @@ def annotate_ax(
 fig, axes = plt.subplots(
     2, 1, facecolor=matplotlib.rcParams.get("axes.facecolor"), sharex=True, sharey=True
 )
-for horizon, ax in zip((24, 1), axes.flatten()):
+for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
     plot_counts_within_horizon(ax, all_price_errors_df, horizon)
 
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
-fig.suptitle("NEM-wide Monthly Count of (Absolute Value) Price Forecast Errors", fontsize=16)
+fig.suptitle(
+    "NEM-wide Monthly Count of (Absolute Value) Price Forecast Errors", fontsize=16
+)
 axes[0].set_title("Within day-ahead horizon (PD & 5MPD)", loc="left", fontsize=10)
 axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
