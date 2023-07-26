@@ -17,7 +17,7 @@ function _get_arbitrage_100MW_data(sim_folder::String)
     return region_data
 end
 
-function _makie_plot(data_dict::Dict{String,DataFrame})
+function _makie_plot_revenue_vs_price(data_dict::Dict{String,DataFrame})
     fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 400))
     ax1 = Axis(fig[1, 1], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using actual prices", titlesize=18)
     ax2 = Axis(fig[1, 2], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using forecast prices", titlesize=18)
@@ -47,5 +47,5 @@ if !isdir(save_path)
     mkpath(save_path)
 end
 data = _get_arbitrage_100MW_data("simulations")["NSW"]
-fig = _makie_plot(data)
+fig = _makie_plot_revenue_vs_price(data)
 save(joinpath(save_path, "NSW_100MW_100MWh_Revenue_Lookahead.pdf"), fig; pt_per_unit=1.0)
