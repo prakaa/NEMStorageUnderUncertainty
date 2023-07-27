@@ -19,6 +19,7 @@ from nemseer import compile_data, download_raw_data, generate_runtimes
 # data wrangling libraries
 import numpy as np
 import pandas as pd
+import polars as pl
 
 
 # static plotting
@@ -48,42 +49,43 @@ analysis_end = "2022/01/01 00:00:00"
 
 # %% [markdown]
 # ## Getting Data
+# define price error dir
+data_dir = Path("price-error")
 
 # %% [markdown]
 # ### Obtaining actual price data from `NEMOSIS`
-#
 # We will download `DISPATCHPRICE` to access the `RRP` (energy price) field and cache it so that it's ready for computation.
 
 # %%
-nemosis_cache = Path("nemosis_cache/")
-if not nemosis_cache.exists():
-    nemosis_cache.mkdir(parents=True)
-
-# %%
-nemosis.cache_compiler(
-    analysis_start, analysis_end, "DISPATCHPRICE", nemosis_cache, fformat="parquet"
-)
+if not data_dir.exists():
+    nemosis_cache = Path("nemosis_cache/")
+    if not nemosis_cache.exists():
+        nemosis_cache.mkdir(parents=True)
+    nemosis.cache_compiler(
+        analysis_start, analysis_end, "DISPATCHPRICE", nemosis_cache, fformat="parquet"
+    )
 # %% [markdown]
 # ### Obtaining forecast price data from `NEMSEER`
 #
 # We will download `PRICE` to access the `RRP` field in `PREDISPATCH` forecasts, and `REGIONSOLUTION` to access the `RRP` field in `P5MIN` forecasts. We'll cache it so that it's ready for computation.
 
 # %%
-download_raw_data(
-    "PREDISPATCH",
-    "PRICE",
-    "nemseer_cache/",
-    forecasted_start=analysis_start,
-    forecasted_end=analysis_end,
-)
+if not data_dir.exists():
+    download_raw_data(
+        "PREDISPATCH",
+        "PRICE",
+        "nemseer_cache/",
+        forecasted_start=analysis_start,
+        forecasted_end=analysis_end,
+    )
 
-download_raw_data(
-    "P5MIN",
-    "REGIONSOLUTION",
-    "nemseer_cache/",
-    forecasted_start=analysis_start,
-    forecasted_end=analysis_end,
-)
+    download_raw_data(
+        "P5MIN",
+        "REGIONSOLUTION",
+        "nemseer_cache/",
+        forecasted_start=analysis_start,
+        forecasted_end=analysis_end,
+    )
 
 # %% [markdown]
 # ## Price Convergence/Forecast Error - 2012 to 2021
@@ -235,8 +237,8 @@ def calculate_price_error(analysis_start: str, analysis_end: str) -> pd.DataFram
 # %%
 dt_str_format = "%Y/%m/%d %H:%M:%S"
 analysis_start_dt = datetime.strptime(analysis_start, dt_str_format)
-if not (save_dir := Path("price-error")).exists():
-    save_dir.mkdir()
+if not data_dir.exists():
+    data_dir.mkdir()
 for i in range(0, 10, 1):
     start = datetime(
         analysis_start_dt.year + i,
@@ -247,7 +249,7 @@ for i in range(0, 10, 1):
         analysis_start_dt.second,
     )
     fname = f"price-error-{start.year}.parquet"
-    if Path(save_dir, fname).exists():
+    if Path(data_dir, fname).exists():
         print(f"Price error {analysis_start_dt.year + i} file exists, continuing")
     else:
         end = datetime(
@@ -262,17 +264,7 @@ for i in range(0, 10, 1):
         price_error = calculate_price_error(
             start.strftime(dt_str_format), end.strftime(dt_str_format)
         )
-        price_error.to_parquet(Path(save_dir, fname))
-
-# %% [markdown]
-# ## Price Forecast Error Analysis
-
-# %%
-all_price_errors = []
-for parq in save_dir.iterdir():
-    df = pd.read_parquet(parq)
-    all_price_errors.append(df)
-all_price_errors_df = pd.concat(all_price_errors).sort_values("forecasted_time")
+        price_error.to_parquet(Path(data_dir, fname))
 
 # %% [markdown]
 # ## Absolute Price Error Count by Severity and Year
@@ -281,18 +273,28 @@ all_price_errors_df = pd.concat(all_price_errors).sort_values("forecasted_time")
 
 
 def plot_counts_within_horizon(
-    ax: matplotlib.axes.Axes, price_errors_df: pd.DataFrame, horizon_minutes: int
+    ax: matplotlib.axes.Axes, price_errors_dir: Path, horizon_minutes: int
 ):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     bottom = np.zeros_like(pd.date_range("2011/12/31", "2021/11/30", freq="1M"), float)
-    thresholds = (1000.0, 5000.0, 10000.0, 15500.0)
+    thresholds = (
+        1000.0,
+        5000.0,
+        10000.0,
+        15500.0,
+    )
     lower_threshold = 300.0
-    count_df = price_errors_df.set_index("forecasted_time")
-    count_df.error = count_df.error.abs()
-    count_df = count_df[count_df.ahead_time < timedelta(minutes=horizon_minutes)]
+    price_errors_lazy = pl.scan_parquet(price_errors_dir / Path("*.parquet"))
+    price_errors_lazy = price_errors_lazy.filter(
+        pl.col("ahead_time") < pl.duration(minutes=horizon_minutes)
+    )
+    abs_price_errors_df = price_errors_lazy.collect().to_pandas()
+    abs_price_errors_df.error = abs_price_errors_df.error.abs()
+    abs_price_errors_df.set_index("forecasted_time", inplace=True)
     for upper_threshold, color in zip(thresholds, colors):
-        threshold_df = count_df[
-            (lower_threshold < count_df.error) & (upper_threshold >= count_df.error)
+        threshold_df = abs_price_errors_df[
+            (lower_threshold < abs_price_errors_df.error)
+            & (upper_threshold >= abs_price_errors_df.error)
         ]
         threshold_count = threshold_df.resample("1M", label="left")["error"].count()
         threshold_count.index += timedelta(days=1)
@@ -362,7 +364,7 @@ fig, axes = plt.subplots(
     2, 1, facecolor=matplotlib.rcParams.get("axes.facecolor"), sharex=True, sharey=True
 )
 for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
-    plot_counts_within_horizon(ax, all_price_errors_df, horizon)
+    plot_counts_within_horizon(ax, data_dir, horizon)
 
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
@@ -391,3 +393,7 @@ fig.savefig(
     facecolor=fig.get_facecolor(),
     dpi=600,
 )
+
+# %%
+
+# %%
