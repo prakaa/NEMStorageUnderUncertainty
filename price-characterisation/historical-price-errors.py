@@ -267,7 +267,7 @@ for i in range(0, 10, 1):
         price_error.to_parquet(Path(data_dir, fname))
 
 # %% [markdown]
-# ## Absolute Price Error Count by Severity and Year
+# ## Price Error Count by Severity and Year
 
 # %%
 
@@ -275,40 +275,58 @@ for i in range(0, 10, 1):
 def plot_counts_within_horizon(
     ax: matplotlib.axes.Axes, price_errors_dir: Path, horizon_minutes: int
 ):
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    bottom = np.zeros_like(pd.date_range("2011/12/31", "2021/11/30", freq="1M"), float)
-    thresholds = (
-        1000.0,
-        5000.0,
-        10000.0,
-        15500.0,
+    dates = pd.date_range("2011/12/31", "2021/11/30", freq="1M")
+    dummy = np.zeros_like(dates, float)
+    negative_thresholds = (
+        (
+            -10000.0,
+            -1000.0,
+            -300.0,
+        ),
+        -15500.0,
     )
-    lower_threshold = 300.0
+    positive_thresholds = (
+        (
+            1000.0,
+            10000.0,
+            15500.0,
+        ),
+        300.0,
+    )
+    colors = matplotlib.colormaps["RdBu"](
+        np.linspace(0, 1, len(negative_thresholds[0] + positive_thresholds[0]))
+    )
+    i = 0
     price_errors_lazy = pl.scan_parquet(price_errors_dir / Path("*.parquet"))
     price_errors_lazy = price_errors_lazy.filter(
         pl.col("ahead_time") < pl.duration(minutes=horizon_minutes)
     )
-    abs_price_errors_df = price_errors_lazy.collect().to_pandas()
-    abs_price_errors_df.error = abs_price_errors_df.error.abs()
-    abs_price_errors_df.set_index("forecasted_time", inplace=True)
-    for upper_threshold, color in zip(thresholds, colors):
-        threshold_df = abs_price_errors_df[
-            (lower_threshold < abs_price_errors_df.error)
-            & (upper_threshold >= abs_price_errors_df.error)
-        ]
-        threshold_count = threshold_df.resample("1M", label="left")["error"].count()
-        threshold_count.index += timedelta(days=1)
-        threshold_count = threshold_count[:"2021-12-01"]
-        ax.bar(
-            threshold_count.index,
-            threshold_count.values,
-            label=f"({int(lower_threshold)}, {int(upper_threshold)}]",
-            bottom=bottom,
-            color=color,
-            width=25,
-        )
-        bottom += threshold_count.values
-        lower_threshold = upper_threshold
+    price_errors_df = price_errors_lazy.collect().to_pandas()
+    price_errors_df.set_index("forecasted_time", inplace=True)
+    for thresholds, lower_threshold in (negative_thresholds, positive_thresholds):
+        bottom = dummy
+        for upper_threshold in thresholds:
+            threshold_df = price_errors_df[
+                (lower_threshold < price_errors_df.error)
+                & (upper_threshold >= price_errors_df.error)
+            ]
+            threshold_count = threshold_df.resample("1M", label="left")["error"].count()
+            threshold_count.index += timedelta(days=1)
+            threshold_count = threshold_count[:"2021-12-01"]
+            dummy_series = pd.Series(dummy, dates)
+            dummy_series.index += timedelta(days=1)
+            threshold_count = threshold_count.combine_first(dummy_series)
+            ax.bar(
+                threshold_count.index,
+                threshold_count.values,
+                label=f"({int(lower_threshold)}, {int(upper_threshold)}]",
+                bottom=bottom,
+                color=tuple(colors[i]),
+                width=25,
+            )
+            bottom += threshold_count.values
+            lower_threshold = upper_threshold
+            i += 1
     return None
 
 
@@ -368,20 +386,18 @@ for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
 
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
-fig.suptitle(
-    "NEM-wide Monthly Count of (Absolute Value) Price Forecast Errors", fontsize=16
-)
+fig.suptitle("NEM-wide Monthly Count of Price Forecast Errors", fontsize=16)
 axes[0].set_title("Within day-ahead horizon (PD & 5MPD)", loc="left", fontsize=10)
 axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
-    ax.set_ylabel("Count of |Price Error| within interval", fontsize=7)
+    ax.set_ylabel("Count of Price Error", fontsize=7)
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(
     handles,
     labels,
-    title="Absolute Value Price Forecast Error Intervals",
+    title="Price forecast error bins (error = actual - forecast)",
     bbox_to_anchor=(0.5, -0.1),
-    ncol=4,
+    ncol=6,
     loc="lower center",
     title_fontsize="small",
     fontsize=8,
@@ -393,7 +409,3 @@ fig.savefig(
     facecolor=fig.get_facecolor(),
     dpi=600,
 )
-
-# %%
-
-# %%
