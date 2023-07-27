@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "price_error_analyses"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.8,<3.12"
 nemosis = "^3.4.0"
 nemseer = "^1.0.4"
 notebook = "^6.5.3"
