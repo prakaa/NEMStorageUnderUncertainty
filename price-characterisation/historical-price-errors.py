@@ -390,7 +390,7 @@ fig.suptitle("NEM-wide Monthly Count of Price Forecast Errors", fontsize=16)
 axes[0].set_title("Within day-ahead horizon (PD & 5MPD)", loc="left", fontsize=10)
 axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
-    ax.set_ylabel("Count of Price Error", fontsize=7)
+    ax.set_ylabel("Count", fontsize=7)
 handles, labels = axes[0].get_legend_handles_labels()
 fig.legend(
     handles,
