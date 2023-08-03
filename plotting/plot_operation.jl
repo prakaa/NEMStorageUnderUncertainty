@@ -18,7 +18,7 @@ function _get_arbitrage_100MW_data(sim_folder::String)
 end
 
 function _makie_plot_revenue_vs_price(data_dict::Dict{String,DataFrame})
-    fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 400))
+    fig = Figure(; resolution=(800, 400))
     ax1 = Axis(fig[1, 1], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using actual prices", titlesize=18)
     ax2 = Axis(fig[1, 2], xlabel="Energy Price (AUD/MW/hr)", ylabel="Revenue (AUD)", title="Simulation using forecast prices", titlesize=18)
     linkyaxes!(ax1, ax2)

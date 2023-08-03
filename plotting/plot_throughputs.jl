@@ -35,7 +35,7 @@ function _plot_throughputs(
     @assert length(selected_sims) == 3
     tp_data = _get_throughput_data(data)
     @assert all([sim in tp_data.sim for sim in selected_sims])
-    fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+    fig = Figure(; resolution=(800, 600))
     n = 0
     (elements, labels, axes) = (Lines[], String[], Axis[])
     for sim in selected_sims
@@ -69,7 +69,6 @@ function _plot_throughputs(
         labels[1:10],
         "Lookaheads (minutes)";
         framevisible=false,
-        patchcolor="#f0f0f0",
         orientation=:horizontal,
         nbanks=2,
         valign=:center,
@@ -111,7 +110,7 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
                 "$energy MWh BESS - " *
                 NEMStorageUnderUncertainty.plot_title_map[formulation] *
                 " [$param] " *
-                "- $state Prices 2021 (Forecast)"
+                "- $state Prices 2021"
             )
         end
         fig = _plot_throughputs(data, selected_sims, title)
@@ -143,12 +142,14 @@ function plot_all_throughputs(sim_folder::String, selected_sims::Vector{String})
             else
                 for file in results
                     data = load(joinpath(results_path, file))
-                    param = match(r".*_param(.*)_NoDeg.*", file).captures[]
-                    if !isnothing(tryparse(Float64, param))
-                        param = parse(Float64, param)
-                        param = convert(Int64, param)
-                    else
-                        param = uppercasefirst(param)
+                    param = match(r".*_param(.*)_NoDeg.*", file)
+                    if !isnothing(param)
+                        try
+                            param = parse(Float64, param.captures[])
+                            param = convert(Int64, param)
+                        catch
+                            param = uppercasefirst(param.captures[])
+                        end
                     end
                     fig, energy = _plot_formulation(
                         data, formulation, file, selected_sims, state, string(param)

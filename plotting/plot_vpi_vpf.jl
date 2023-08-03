@@ -21,7 +21,6 @@ function add_legend!(
         [["Value of perfect foresight", "Value of perfect information"], value_labels],
         ["Values", value_title];
         framevisible=false,
-        patchcolor="#f0f0f0",
     )
     return nothing
 end
@@ -35,7 +34,7 @@ function _makie_plot_each_formulation(
         findfirst(x -> x == lookahead, lookaheads) for lookahead in plot_data.lookahead
     ]
     v_pf_colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true, alpha=0.8)]
-    fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+    fig = Figure(; resolution=(800, 600))
     ylabel = "Value (% of perfect foresight revenue)"
     ax = Axis(
         fig[1, 1];
@@ -123,7 +122,7 @@ function plot_value_of_information_and_foresight_across_formulations(
         state_data = all_data[state]
         plot_mw_capacities = (25, 100, 400)
         plot_lookaheads = ("5", "60", "240", "480", "900")
-        fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 1000))
+        fig = Figure(; resolution=(800, 1000))
         state_data.label = map(
             x -> NEMStorageUnderUncertainty.formulation_label_map[x], state_data.formulation
         )

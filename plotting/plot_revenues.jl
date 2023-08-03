@@ -47,7 +47,7 @@ function _makie_plot_all(
     colors = NEMStorageUnderUncertainty.generate_formulation_colors(
         param_formulations, non_param_formulations, sims
     )
-    fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+    fig = Figure(; resolution=(800, 600))
     for (stroke_col, bar_colors, df) in
         zip((:gray, :black), (colors, :transparent), (actual_rev, forecast_rev))
         sort!(df, [:formulation, :param, :lookahead])
@@ -88,7 +88,6 @@ function _makie_plot_all(
         [["Actual", "Forecast"], sims],
         ["Data type", "Simulated formulation"];
         framevisible=false,
-        patchcolor="#f0f0f0",
     )
     energy = unique(actual_rev.energy_capacity)[]
     power = unique(actual_rev.power_capacity)[]
@@ -110,7 +109,7 @@ function _makie_plot(
         findfirst(x -> x == lookahead, lookaheads) for lookahead in plot_data.lookahead
     ]
     colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
-    fig = Figure(; backgroundcolor="#f0f0f0", resolution=(800, 600))
+    fig = Figure(; resolution=(800, 600))
     ax = Axis(fig[1, 1]; xticks=(1:length(sims), sims), title, ylabel=ylabel, yscale=yscale)
     barplot!(ax, xs, plot_data.revenue; dodge=groups, color=colors[groups], fillto=fillto)
     ylims!(ax, 1.0, nothing)
@@ -122,7 +121,6 @@ function _makie_plot(
         lookaheads,
         "Lookaheads\n(minutes)";
         framevisible=false,
-        patchcolor="#f0f0f0",
     )
     return fig
 end
