@@ -29,6 +29,15 @@ docs:
 compile_results:
 	julia results/compile_results.jl
 
+## Make all price and price error analysis plots
+all_price_characterisation_plots:
+	cd price-characterisation && \
+	poetry run python price-analysis.py
+	cd price-characterisation && \
+	poetry run python price-error-rugplots-2021.py
+	cd price-characterisation && \
+	poetry run python historical-price-errors.py
+
 
 #################################################################################
 # PROJECT RULES                                                                 #

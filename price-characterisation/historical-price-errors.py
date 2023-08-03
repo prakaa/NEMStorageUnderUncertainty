@@ -379,7 +379,7 @@ def annotate_ax(
 
 
 fig, axes = plt.subplots(
-    2, 1, facecolor=matplotlib.rcParams.get("axes.facecolor"), sharex=True, sharey=True
+    2, 1, sharex=True, sharey=True
 )
 for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
     plot_counts_within_horizon(ax, data_dir, horizon)
@@ -406,6 +406,5 @@ if not (save_dir := Path("plots", "historical", "errors")).exists():
     save_dir.mkdir()
 fig.savefig(
     Path(save_dir, "price_errors_nemwide_2012_2021.pdf"),
-    facecolor=fig.get_facecolor(),
     dpi=600,
 )

@@ -114,7 +114,6 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
         sharey=True,
         dpi=600,
         figsize=(10, 6),
-        facecolor=matplotlib.rcParams.get("axes.facecolor"),
     )
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for i, (ax, region) in enumerate(
@@ -194,7 +193,7 @@ fig = plot_daily_price_spread(prices)
 if not (plot_dir := Path("plots", "historical", "spreads")).exists():
     plot_dir.mkdir(parents=True)
 fig.savefig(
-    Path(plot_dir, "historical_daily_price_spreads.pdf"), facecolor=fig.get_facecolor()
+    Path(plot_dir, "historical_daily_price_spreads.pdf")
 )
 
 # %% [markdown]
@@ -210,7 +209,6 @@ def plot_volatility(prices: pd.DataFrame) -> None:
         sharex=True,
         sharey=True,
         dpi=600,
-        facecolor=matplotlib.rcParams.get("axes.facecolor"),
     )
     fig.set_size_inches(10, 5)
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -258,7 +256,7 @@ def plot_volatility(prices: pd.DataFrame) -> None:
 fig = plot_volatility(prices)
 if not (plot_dir := Path("plots", "historical", "volatility")).exists():
     plot_dir.mkdir(parents=True)
-fig.savefig(Path(plot_dir, "historical_volatility.pdf"), facecolor=fig.get_facecolor())
+fig.savefig(Path(plot_dir, "historical_volatility.pdf"))
 
 # %% [markdown]
 # ## NSW Time-of-day Price Percentiles, 2021
@@ -273,7 +271,6 @@ def plot_nsw_price_percentiles(prices: pd.DataFrame) -> None:
         sharex=True,
         sharey=True,
         dpi=600,
-        facecolor=matplotlib.rcParams.get("axes.facecolor"),
     )
     fig.set_size_inches(7, 5)
     color = plt.rcParams["axes.prop_cycle"].by_key()["color"][1]
@@ -311,4 +308,4 @@ def plot_nsw_price_percentiles(prices: pd.DataFrame) -> None:
 fig = plot_nsw_price_percentiles(prices)
 if not (plot_dir := Path("plots", "historical", "nsw")).exists():
     plot_dir.mkdir(parents=True)
-fig.savefig(Path(plot_dir, "tod.pdf"), facecolor=fig.get_facecolor())
+fig.savefig(Path(plot_dir, "tod.pdf"))
