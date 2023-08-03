@@ -269,8 +269,8 @@ text.usetex : False   ## use latex for all text handling. The following fonts
 ## Following are default face and edge colors, default tick sizes,
 ## default fontsizes for ticklabels, and so on.  See
 ## https://matplotlib.org/api/axes_api.html#module-matplotlib.axes
-axes.facecolor     : f0f0f0   ## axes background color
-axes.edgecolor     : f0f0f0   ## axes edge color
+axes.facecolor     : white   ## axes background color
+axes.edgecolor     : white   ## axes edge color
 axes.linewidth     : 3.0     ## edge linewidth
 axes.grid          : True   ## display grid or not
 axes.grid.axis     : both    ## which axis the grid should apply to

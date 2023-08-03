@@ -401,6 +401,7 @@ fig.legend(
     loc="lower center",
     title_fontsize="small",
     fontsize=8,
+    edgecolor="white",
 )
 if not (save_dir := Path("plots", "historical", "errors")).exists():
     save_dir.mkdir()
