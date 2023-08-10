@@ -379,7 +379,7 @@ def annotate_ax(
 
 
 fig, axes = plt.subplots(
-    2, 1, sharex=True, sharey=True
+    2, 1, sharex=True, sharey=True,
 )
 for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
     plot_counts_within_horizon(ax, data_dir, horizon)
@@ -396,13 +396,13 @@ fig.legend(
     handles,
     labels,
     title="Price forecast error bins (error = actual - forecast)",
-    bbox_to_anchor=(0.5, -0.1),
-    ncol=6,
+    bbox_to_anchor=(0.5, -0.12),
     loc="lower center",
     title_fontsize="small",
     fontsize=8,
     edgecolor="white",
     facecolor="white",
+    ncols=3,
 )
 if not (save_dir := Path("plots", "historical", "errors")).exists():
     save_dir.mkdir()
