@@ -387,7 +387,7 @@ for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 fig.suptitle("NEM-wide Monthly Count of Price Forecast Errors", fontsize=16)
-axes[0].set_title("Within day-ahead horizon (PD & 5MPD)", loc="left", fontsize=10)
+axes[0].set_title("Within day-ahead horizon (30MPD & 5MPD)", loc="left", fontsize=10)
 axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
     ax.set_ylabel("Count", fontsize=7)
