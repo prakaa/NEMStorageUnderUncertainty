@@ -100,6 +100,7 @@ mpcs = [
 # %% [markdown]
 # ## Daily Price Spread, 2012-2021
 
+
 # %%
 # daily min max
 def plot_daily_price_spread(prices: pd.DataFrame) -> None:
@@ -177,6 +178,8 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
         loc="lower center",
         bbox_to_anchor=(0.5, -0.05),
         ncol=3,
+        edgecolor="white",
+        facecolor="white",
     )
     leg.get_frame().set_linewidth(0.0)
     if rolling_mean.index.year[-1] == 2023:
@@ -192,9 +195,7 @@ def plot_daily_price_spread(prices: pd.DataFrame) -> None:
 fig = plot_daily_price_spread(prices)
 if not (plot_dir := Path("plots", "historical", "spreads")).exists():
     plot_dir.mkdir(parents=True)
-fig.savefig(
-    Path(plot_dir, "historical_daily_price_spreads.pdf")
-)
+fig.savefig(Path(plot_dir, "historical_daily_price_spreads.pdf"))
 
 # %% [markdown]
 # ## Volatility, 2012-2021
