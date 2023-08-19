@@ -51,6 +51,7 @@ analysis_end = "2022/01/01 00:00:00"
 # ## Getting Data
 # define price error dir
 data_dir = Path("price-error")
+nemosis_cache = Path("nemosis_cache/")
 
 # %% [markdown]
 # ### Obtaining actual price data from `NEMOSIS`
@@ -58,7 +59,6 @@ data_dir = Path("price-error")
 
 # %%
 if not data_dir.exists():
-    nemosis_cache = Path("nemosis_cache/")
     if not nemosis_cache.exists():
         nemosis_cache.mkdir(parents=True)
     nemosis.cache_compiler(
@@ -251,6 +251,7 @@ for i in range(0, 10, 1):
     fname = f"price-error-{start.year}.parquet"
     if Path(data_dir, fname).exists():
         print(f"Price error {analysis_start_dt.year + i} file exists, continuing")
+        continue
     else:
         end = datetime(
             start.year + 1,
@@ -260,11 +261,12 @@ for i in range(0, 10, 1):
             start.minute,
             start.second,
         )
-        print(f"Calculating price errors for year {start.year}")
-        price_error = calculate_price_error(
-            start.strftime(dt_str_format), end.strftime(dt_str_format)
-        )
-        price_error.to_parquet(Path(data_dir, fname))
+
+    print(f"Calculating price errors for year {start.year}")
+    price_error = calculate_price_error(
+        start.strftime(dt_str_format), end.strftime(dt_str_format)
+    )
+    price_error.to_parquet(Path(data_dir, fname))
 
 # %% [markdown]
 # ## Price Error Count by Severity and Year
@@ -299,7 +301,7 @@ def plot_counts_within_horizon(
     i = 0
     price_errors_lazy = pl.scan_parquet(price_errors_dir / Path("*.parquet"))
     price_errors_lazy = price_errors_lazy.filter(
-        pl.col("ahead_time") < pl.duration(minutes=horizon_minutes)
+        pl.col("ahead_time") <= pl.duration(minutes=horizon_minutes)
     )
     price_errors_df = price_errors_lazy.collect().to_pandas()
     price_errors_df.set_index("forecasted_time", inplace=True)
@@ -379,16 +381,18 @@ def annotate_ax(
 
 
 fig, axes = plt.subplots(
-    2, 1, sharex=True, sharey=True,
+    3, 1, sharex=True,
 )
-for horizon, ax in zip((24 * 60, 1 * 60), axes.flatten()):
+for horizon, ax in zip((24*60, 2 * 60, 15), axes.flatten()):
     plot_counts_within_horizon(ax, data_dir, horizon)
 
 annotate_ax(axes[0], annotate=True, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
+annotate_ax(axes[2], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 fig.suptitle("NEM-wide Monthly Count of Price Forecast Errors", fontsize=16)
-axes[0].set_title("Within day-ahead horizon (30MPD & 5MPD)", loc="left", fontsize=10)
-axes[1].set_title("Within hour-ahead horizon (5MPD)", loc="left", fontsize=10)
+axes[0].set_title("Up to a day ahead (30MPD & 5MPD)", loc="left", fontsize=10)
+axes[1].set_title("Up to two hours ahead (30MPD & 5MPD)", loc="left", fontsize=10)
+axes[2].set_title("Up to 15 minutes ahead (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
     ax.set_ylabel("Count", fontsize=7)
 handles, labels = axes[0].get_legend_handles_labels()
