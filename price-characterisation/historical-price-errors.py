@@ -391,7 +391,7 @@ annotate_ax(axes[1], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsiz
 annotate_ax(axes[2], annotate=False, vline_ymax=1.1, y_annot=29e3, annot_fontsize=6)
 fig.suptitle("NEM-wide Monthly Count of Price Forecast Errors", fontsize=16)
 axes[0].set_title("Up to a day ahead (30MPD & 5MPD)", loc="left", fontsize=10)
-axes[1].set_title("Up to two hours ahead (30MPD & 5MPD)", loc="left", fontsize=10)
+axes[1].set_title("Up to 2 hours ahead (30MPD & 5MPD)", loc="left", fontsize=10)
 axes[2].set_title("Up to 15 minutes ahead (5MPD)", loc="left", fontsize=10)
 for ax in axes.flatten():
     ax.set_ylabel("Count", fontsize=7)
