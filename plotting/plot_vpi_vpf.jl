@@ -87,6 +87,7 @@ function _makie_plot_across_formulation(
         yticks=(range(0, 100; step=20), string.(range(0, 100; step=20))),
         title,
         ylabel=ylabel,
+        xlabel="Lookahead (minutes)",
     )
     xs = [findfirst(x -> x == lk, lookaheads) for lk in plot_data.lookahead]
     groups = [findfirst(x -> x == f, formulations) for f in plot_data.label]
