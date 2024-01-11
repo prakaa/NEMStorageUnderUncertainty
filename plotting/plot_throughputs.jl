@@ -41,8 +41,9 @@ function _plot_throughputs(
     for sim in selected_sims
         sim_data = filter(:sim => x -> x == sim, tp_data)
         (data_type, mw) = split(sim, "/")
+        mw = convert(Int64, parse(Float64, mw[1:end-2]))
         data_type = uppercasefirst(data_type)
-        ax = Axis(fig[1, n]; title="$(mw)")
+        ax = Axis(fig[1, n]; title="$(mw) MW")
         lookaheads = unique(sim_data.lookahead_minutes)
         colors = [c for c in cgrad(:roma, length(lookaheads); categorical=true)]
         for (i, lk) in enumerate(lookaheads)
