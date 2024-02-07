@@ -10,7 +10,7 @@ This repository contains the following:
   1. Analysis of historical prices and of (30-minute) pre-dispatch and 5-minute pre-dispatch price "forecast"[^1] errors from the Australian National Electricity Market (NEM).
   2. Source code and results from simulations that investigate how imperfect foresight affects storage arbitrage operation and revenues. This modelling uses historical actual price data and price forecasts from pre-dispatch & 5-minute pre-dispatch.
   
-Though we are currently writing up the results from this study, you can still use this repository to access the model source code, documentation and results in the form of charts. 
+The results from this study have been submitted for publication. You can use this repository to access the model source code, documentation and results in the form of charts. 
 
 [^1]: We use the term *"forecast"* loosely, especially given that these *"forecasts"* change once participants update offer information (e.g. through rebidding) or submit revised resource availabilities and energy constraints. Both of these are intended outcomes of these *"ahead processes"*, which are run by the Australian Energy Market Operator (AEMO) to provide system and market information to participants to inform their decision-making. However, to avoid confusion and to ensure consistency with the language used by AEMO, we use the term *"forecast"*.
 
