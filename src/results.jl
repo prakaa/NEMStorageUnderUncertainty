@@ -71,8 +71,8 @@ function _summarise_simulations(
     for key in keys(data)
         df = data[key]
         for lookahead in unique(df.lookahead_minutes)
-            lookahead_df = df[df.lookahead_minutes .== lookahead, :]
-            lookahead_df = lookahead_df[lookahead_df.status .== "binding", :]
+            lookahead_df = df[df.lookahead_minutes.==lookahead, :]
+            lookahead_df = lookahead_df[lookahead_df.status.=="binding", :]
             revenue = sum(lookahead_df.revenue)
             average_gap = mean(unique(lookahead_df, "decision_time").relative_gap)
             bess_power = string(match(r"([0-9\.]*)MW", split(key, "/")[2]).captures[])
@@ -100,18 +100,18 @@ function _summarise_simulations(
 end
 
 @doc raw"""
-Calculates values of perfect information and foresight as absolute values (in AUD) and as
+Calculates values of perfect lookahead and information as absolute values (in AUD) and as
 a percentage of perfect foresight revenue.
 
-**Value of perfect information**: What is the additional benefit (revenue) that a participant
+**Value of perfect lookahead**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be in the *lookahead
 horizon*.
-  * ``VPI = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
+  * ``VPL = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
 
-**Value of perfect foresight**: What is the additional benefit (revenue) that a participant
-could gain if they were to know exactly what the market prices will be *over the entire
-year*
-  * ``VPF = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
+**Value of perfect information**: What is the additional benefit (revenue) that a
+participant could gain if they were to know exactly what the market prices will be
+*over the entire year*
+  * ``VPI = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
 
 N.B. This function assumes that the input `df` only has data that corresponds to a device
 of a particular `energy_capacity`.
@@ -122,15 +122,15 @@ of a particular `energy_capacity`.
 
 # Returns
 
-`DataFrame` with absolute values of perfect information and foresight, and the same values
+`DataFrame` with absolute values of perfect lookahead and information, and the same values
 as a percentage of perfect foresight revenue.
 """
-function calculate_vpi_vpf(df::DataFrame)
-    (v_pi_abs, v_pf_abs) = (Float64[], Float64[])
-    (v_pi_percentage, v_pf_percentage) = (Float64[], Float64[])
+function calculate_vpl_vpi(df::DataFrame)
+    (v_pl_abs, v_pi_abs) = (Float64[], Float64[])
+    (v_pl_percentage, v_pi_percentage) = (Float64[], Float64[])
     (power_caps, data) = (Float64[], String[])
-    actual_caps = unique(df[df.data_type .== "actual", :power_capacity])
-    forecast_caps = unique(df[df.data_type .== "forecast", :power_capacity])
+    actual_caps = unique(df[df.data_type.=="actual", :power_capacity])
+    forecast_caps = unique(df[df.data_type.=="forecast", :power_capacity])
     capacities = intersect(actual_caps, forecast_caps)
     lookaheads = [lk for lk in unique(df.lookahead) if lk != "Perfect Foresight"]
     for cap in capacities
@@ -139,21 +139,22 @@ function calculate_vpi_vpf(df::DataFrame)
             cap_mask = df.power_capacity .== cap
             actual_mask = df.data_type .== "actual"
             forecast_mask = df.data_type .== "forecast"
+            forecast_rev = df[cap_mask.&forecast_mask.&lk_mask, :revenue]
             pf_rev = df[
-                cap_mask .& forecast_mask .& (df.lookahead .== "Perfect Foresight"),
+                cap_mask.&forecast_mask.&(df.lookahead.=="Perfect Foresight"),
                 :revenue,
             ]
-            pi_rev = df[cap_mask .& actual_mask .& lk_mask, :revenue]
-            v_pi = pi_rev - df[cap_mask .& forecast_mask .& lk_mask, :revenue]
-            v_pf = pf_rev - df[cap_mask .& forecast_mask .& lk_mask, :revenue]
+            pi_rev = df[cap_mask.&actual_mask.&lk_mask, :revenue]
+            v_pl = pi_rev - forecast_rev
+            v_pi = pf_rev - forecast_rev
+            v_pl_percentage_pf = @. v_pl / pf_rev * 100
             v_pi_percentage_pf = @. v_pi / pf_rev * 100
-            v_pf_percentage_pf = @. v_pf / pf_rev * 100
             push!(power_caps, cap)
             push!(data, lookahead)
+            push!(v_pl_abs, v_pl[])
             push!(v_pi_abs, v_pi[])
-            push!(v_pf_abs, v_pf[])
+            push!(v_pl_percentage, v_pl_percentage_pf[])
             push!(v_pi_percentage, v_pi_percentage_pf[])
-            push!(v_pf_percentage, v_pf_percentage_pf[])
         end
     end
     return DataFrame(
@@ -161,11 +162,61 @@ function calculate_vpi_vpf(df::DataFrame)
         :energy_capacity => fill(unique(df.energy_capacity)[], length(power_caps)),
         :power_capacity => power_caps,
         :lookahead => data,
+        :vpl_abs => v_pl_abs,
         :vpi_abs => v_pi_abs,
-        :vpf_abs => v_pf_abs,
+        :vpl_per => v_pl_percentage,
         :vpi_per => v_pi_percentage,
-        :vpf_per => v_pf_percentage,
     )
+end
+
+"""
+Calculates values of perfect lookahead and information
+
+For each state, this function cycles through each simulated formulation calculates
+the value of perfect lookahead and value of information
+
+For a single state, the VPLs and VPIs across simulated formulations are then released
+in a JLD2 file in the `results` folder
+
+# Arguments
+  * `sim_folder`: Path containing simulations of different formulations and their results.
+
+# Returns
+
+`Dict` mapping each state to `DataFrame` with VPL and VPI for each formulation and
+lookahead.
+"""
+function calculate_vpl_vpi_across_scenarios(summary_folder::String)
+    @assert isdir(summary_folder)
+    state_summary_results = [
+        file for file in readdir(summary_folder) if contains(file, "summary_results.jld2")
+    ]
+    states_vpl_vpi = Dict{String,DataFrame}()
+    for file in state_summary_results
+        state = string(
+            match(r"([A-Z]{2,3})_summary_results.jld2", file).captures[]
+        )
+
+        @info "Calculating VPL and VPI for $state"
+        summary_data = load(joinpath(summary_folder, file))
+        vpl_vpi_data = DataFrame[]
+        for (formulation, summary) in pairs(summary_data)
+            vpl_vpi = calculate_vpl_vpi(summary)
+            if contains(formulation, "/")
+                param = string(match(r".*/(.*)", formulation).captures[])
+                vpl_vpi[!, :param] = fill(param, size(vpl_vpi, 1))
+            else
+                vpl_vpi[!, :param] = fill(missing, size(vpl_vpi, 1))
+            end
+            push!(vpl_vpi_data, vpl_vpi)
+        end
+        state_vpl_vpi = vcat(vpl_vpi_data...)
+        @info "Saving VPL and VPI data for $state"
+        jldopen(joinpath(summary_folder, "vpl_vpi.jld2"), "w"; compress=true) do f
+            f["$(state)"] = state_vpl_vpi
+        end
+    end
+    return nothing
 end
 
 """
@@ -177,7 +228,7 @@ For each state, this function cycles through each simulated formulation and:
   1. Calculates summary results (i.e. annual revenue and mean relative gap)
   2. Calculates the value of perfect information and value of perfect foresight
 
-For a single state, the VPIs and VPFs across simulated formulations are then released
+For a single state, the VPLs and VPIs across simulated formulations are then released
 information a JLD2 file in the `results` folder, along with summary results for each
 simulated formulation.
 

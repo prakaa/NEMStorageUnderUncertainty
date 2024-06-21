@@ -25,7 +25,7 @@ get_NEM_data: install_get_NEM_data
 docs:
 	julia docs/make.jl
 
-## Compile summary and VPI/VPF results from simulation raw data
+## Compile summary and VPL/VPI results from simulation raw data
 compile_results:
 	julia results/compile_results.jl
 
