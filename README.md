@@ -47,22 +47,22 @@ Study terminology and detailed methodology (e.g. objective functions, constraint
 
 A variety of formulations (objective functions) are modelled. Refer to [this section](https://prakaa.github.io/NEMStorageUnderUncertainty/dev/formulations/) of the documentation for more detail.
 
-### Values of perfect information (VPI) and perfect foresight (VPF)
+### Values of perfect lookahead (VPL) and perfect information (VPI)
 
-**Value of perfect information**: What is the additional benefit (revenue) that a participant
+**Value of perfect lookahead**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be in the *lookahead
 horizon*.
 
 ```math
-VPI = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}$$
+VPL = \textrm{Revenue}_\textrm{Actual Data Simulation} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}$$
 ```
 
-**Value of perfect foresight**: What is the additional benefit (revenue) that a participant
+**Value of perfect information**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be *over the entire
 year*
 
 ```math
-VPF = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}
+VPI = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}
 ```
 
 ### Results
@@ -71,7 +71,7 @@ All charts produced from the analysis of simulation results can be found [here](
 
 - [This chart](results/plots/revenues/NSW_100.0MWh_100.0MW_allformulations_revenue.pdf) shows absolute revenues for a 1 hour duration BESS (100 MW/100 MWh) for different lookahead horizons and modelled formulations
 - [This chart](results/plots/operation/NSW_100MW_100MWh_Revenue_Lookahead.pdf) shows how under imperfect foresight, a 1 hour duration BESS can miss significant discharge opportunities or make very poor charge decisions
-- [This chart](results/plots/vpi_vpf/NSW_100_allformulations_vpi_vpf.pdf) shows VPIs and VPFs for BESS with durations of 15 minutes, 1 hour and 4 hours across lookaheads and modelled formulations
+- [This chart](results/plots/vpl_vpi/NSW_100_allformulations_vpl_vpi.pdf) shows VPLs and VPIs for BESS with durations of 15 minutes, 1 hour and 4 hours across lookaheads and modelled formulations
 - [This chart](results/plots/throughput/NSW_100_arbitrage_throughputpenalty_no_degradation_600000_throughputs.pdf) shows the cumulative throughput of BES with durations of 15 minutes, 1 hour and 4 hours (all with modelled throughput penalty that amortises a BESS capital cost of 600,000 AUD/MWh across BESS lifetime throughput) across the modelled year (2021).
 
 ### Source code installation
