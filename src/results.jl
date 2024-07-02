@@ -46,7 +46,8 @@ Columns in summary output include:
   3. `power_capacity`, which is the power capacity of the device in MW
   4. `data_type`, which is forecast or actual (data)
   5. `lookahead` of the simulation in minutes
-  6. `revenue`, which is the total annual revenue of the simulated device in AUD
+  6. `revenue`, which is the total annual net revenue of the simulated device in AUD
+  7. `neg_revenue`, which is the total annual negative revenue in AUD (i.e. losses)
   7. `mean_rel_gap`, which is the mean relative gap across all decision times
 
 # Arguments
@@ -64,6 +65,7 @@ function _summarise_simulations(
     data::Dict{String,Any}, formulation::String, energy_capacity::Float64
 )
     revenues = Float64[]
+    neg_revenues = Float64[]
     bess_powers = Float64[]
     data_types = String[]
     lookaheads = Int64[]
@@ -74,10 +76,12 @@ function _summarise_simulations(
             lookahead_df = df[df.lookahead_minutes.==lookahead, :]
             lookahead_df = lookahead_df[lookahead_df.status.=="binding", :]
             revenue = sum(lookahead_df.revenue)
+            neg_revenue = sum(lookahead_df[lookahead_df.revenue.<0.0, :revenue])
             average_gap = mean(unique(lookahead_df, "decision_time").relative_gap)
             bess_power = string(match(r"([0-9\.]*)MW", split(key, "/")[2]).captures[])
             data_type = split(key, "/")[1]
             push!(revenues, float(revenue))
+            push!(neg_revenues, float(neg_revenue))
             push!(lookaheads, lookahead)
             push!(average_gaps, average_gap)
             push!(bess_powers, parse(Float64, bess_power))
@@ -91,6 +95,7 @@ function _summarise_simulations(
         :data_type => data_types,
         :lookahead => string.(lookaheads),
         :revenue => revenues,
+        :neg_revenue => neg_revenues,
         :mean_rel_gap => average_gaps,
     )
     summary_data = sort(summary_data, "power_capacity")
