@@ -183,15 +183,14 @@ in a JLD2 file in the `results` folder
 
 # Returns
 
-`Dict` mapping each state to `DataFrame` with VPL and VPI for each formulation and
-lookahead.
+`Nothing`
+
 """
 function calculate_vpl_vpi_across_scenarios(summary_folder::String)
     @assert isdir(summary_folder)
     state_summary_results = [
         file for file in readdir(summary_folder) if contains(file, "summary_results.jld2")
     ]
-    states_vpl_vpi = Dict{String,DataFrame}()
     for file in state_summary_results
         state = string(
             match(r"([A-Z]{2,3})_summary_results.jld2", file).captures[]
@@ -220,92 +219,74 @@ function calculate_vpl_vpi_across_scenarios(summary_folder::String)
 end
 
 """
-Summarises results for each simulated formulation and then calculates values of perfect
-information and foresight.
+Summarises results, revenues and VPL and VPI for each simulated formulation
 
 For each state, this function cycles through each simulated formulation and:
 
-  1. Calculates summary results (i.e. annual revenue and mean relative gap)
-  2. Calculates the value of perfect information and value of perfect foresight
+  1. Calculates summary results (i.e. annual net revenue and mean relative gap)
+  1. Calculates revenues (i.e. annual net revenue, annual negative revenue)
+  2. Calculates the value of perfect lookahead and value of perfect information
 
-For a single state, the VPLs and VPIs across simulated formulations are then released
-information a JLD2 file in the `results` folder, along with summary results for each
-simulated formulation.
+A JLD2 file for each of these (with data for each simulated formulation) is released in
+the `results` folder
 
 # Arguments
   * `sim_folder`: Path containing simulations of different formulations and their results.
 
 # Returns
 
-`Dict` mapping each state to `DataFrame` with VPI and VPF for each formulation and
+`Nothing`
+
 lookahead.
 """
-function calculate_summaries_and_vpi_vpf_across_scenarios(sim_folder::String)
-    function _calculate_summary_vpi_vpf_for_formulation(
-        sim_folder::String,
-        formulation::String,
-        file::String,
-        energy::Float64,
-        state::String,
-    )
-        results_path = joinpath(sim_folder, formulation, "results")
-        data = load(joinpath(results_path, file))
-        @info "Calculating summary information for $state $formulation"
-        summary = _summarise_simulations(data, formulation, energy)
-        @info "Calculating VPI and VPF for $state $formulation"
-        return summary, calculate_vpi_vpf(summary)
-    end
-
+function calculate_summaries_and_vpl_vpi_across_scenarios(sim_folder::String)
     save_path = joinpath("results", "data")
     if !isdir(save_path)
         mkpath(save_path)
     end
     categorisation = _categorise_simulation_results(sim_folder)
-    states_vpi_vpf = Dict{String,DataFrame}()
     for state in keys(categorisation)
-        summary_data = Dict{String,DataFrame}()
-        vpi_vpf_data = DataFrame[]
-        formulation_results = categorisation[state]
-        for (formulation, results) in pairs(formulation_results)
-            if length(results) == 1
-                file = results[]
-                energy = parse(
-                    Float64, match(r"[A-Z]{2,3}_([0-9\.]*)MWh_.*", file).captures[]
-                )
-                (summary, vpi_vpf) = _calculate_summary_vpi_vpf_for_formulation(
-                    sim_folder, formulation, file, energy, state
-                )
-                vpi_vpf[!, :param] = fill(missing, size(vpi_vpf, 1))
-                push!(vpi_vpf_data, vpi_vpf)
-                summary_data["$(formulation)"] = summary
-            else
-                for file in results
-                    energy_param_capture = match(
-                        r"[A-Z]{2,3}_([0-9\.]*)MWh_.*_param(.*)_NoDeg_2021.jld2", file
+        summary_file_name = joinpath(save_path, "$(state)_summary_results.jld2")
+        if !isfile(summary_file_name)
+            summary_data = Dict{String,DataFrame}()
+            formulation_results = categorisation[state]
+            for (formulation, results) in pairs(formulation_results)
+                formulation_results_path = joinpath(sim_folder, formulation, "results")
+                if length(results) == 1
+                    file = results[]
+                    energy = parse(
+                        Float64, match(r"[A-Z]{2,3}_([0-9\.]*)MWh_.*", file).captures[]
                     )
-                    energy = parse(Float64, energy_param_capture.captures[1])
-                    param = string(energy_param_capture.captures[2])
-                    (summary, vpi_vpf) = _calculate_summary_vpi_vpf_for_formulation(
-                        sim_folder, formulation, file, energy, state
-                    )
-                    vpi_vpf[!, :param] = fill(param, size(vpi_vpf, 1))
-                    push!(vpi_vpf_data, vpi_vpf)
-                    summary_data["$(formulation)/$(param)"] = summary
+                    data = load(joinpath(formulation_results_path, file))
+                    @info "Calculating summary information for $state $formulation"
+                    summary = _summarise_simulations(data, formulation, energy)
+                    summary_data["$(formulation)"] = summary
+                else
+                    for file in results
+                        energy_param_capture = match(
+                            r"[A-Z]{2,3}_([0-9\.]*)MWh_.*_param(.*)_NoDeg_2021.jld2", file
+                        )
+                        energy = parse(Float64, energy_param_capture.captures[1])
+                        param = string(energy_param_capture.captures[2])
+                        data = load(joinpath(formulation_results_path, file))
+                        summary = _summarise_simulations(data, formulation, energy)
+                        @info "Calculating summary information for $state $formulation $param"
+                        summary_data["$(formulation)/$(param)"] = summary
+                    end
+                end
+            end
+            summary_file_name = joinpath(save_path, "$(state)_summary_results.jld2")
+            jldopen(summary_file_name, "w"; compress=true) do f
+                for (key, value) in pairs(summary_data)
+                    f[key] = value
                 end
             end
         end
-        summary_file_name = joinpath(save_path, "$(state)_summary_results.jld2")
-        jldopen(summary_file_name, "w"; compress=true) do f
-            for (key, value) in pairs(summary_data)
-                f[key] = value
-            end
-        end
-        state_vpi_vpf = vcat(vpi_vpf_data...)
-        @info "Saving VPI and VPF data for $state"
-        jldopen(joinpath(save_path, "vpi_vpf.jld2"), "w"; compress=true) do f
-            f["$(state)"] = state_vpi_vpf
-        end
-        states_vpi_vpf[state] = state_vpi_vpf
     end
-    return states_vpi_vpf
+    vpl_vpi_file_name = joinpath(save_path, "vpl_vpi.jld2")
+    if !isfile(vpl_vpi_file_name)
+        @info "Calculating VPL and VPI across scenarios"
+        calculate_vpl_vpi_across_scenarios(save_path)
+    end
+    return nothing
 end
