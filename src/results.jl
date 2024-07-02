@@ -105,8 +105,8 @@ function _summarise_simulations(
 end
 
 @doc raw"""
-Calculates values of perfect lookahead and information as absolute values (in AUD) and as
-a percentage of perfect foresight revenue.
+Calculates values of perfect lookahead and information (as absolute values in AUD and as
+a percentage of perfect foresight revenue), and the detrimental decision metric
 
 **Value of perfect lookahead**: What is the additional benefit (revenue) that a participant
 could gain if they were to know exactly what the market prices will be in the *lookahead
@@ -117,6 +117,10 @@ horizon*.
 participant could gain if they were to know exactly what the market prices will be
 *over the entire year*
   * ``VPI = \textrm{Revenue}_\textrm{Perfect Foresight} -  \textrm{Revenue}_\textrm{Forecast Data Simulation}``
+
+**Detrimental decision metric**: What is the additional negative revenue (i.e. losses)
+incurred when using forecast market prices in the lookahead horizon as a percentage?
+  * ``DDM = \frac{\textrm{NegRev}_{\textrm{Actual Data Simulation}} -\textrm{NegRev}_{\textrm{Forecast Data Simulation}}}{\textrm{Revenue}_{\textrm{Actual Data Simulation}}-\textrm{Revenue}_{\textrm{Forecast Data Simulation}}}``
 
 N.B. This function assumes that the input `df` only has data that corresponds to a device
 of a particular `energy_capacity`.
@@ -133,6 +137,7 @@ as a percentage of perfect foresight revenue.
 function calculate_vpl_vpi(df::DataFrame)
     (v_pl_abs, v_pi_abs) = (Float64[], Float64[])
     (v_pl_percentage, v_pi_percentage) = (Float64[], Float64[])
+    ddms = Float64[]
     (power_caps, data) = (Float64[], String[])
     actual_caps = unique(df[df.data_type.=="actual", :power_capacity])
     forecast_caps = unique(df[df.data_type.=="forecast", :power_capacity])
@@ -145,21 +150,25 @@ function calculate_vpl_vpi(df::DataFrame)
             actual_mask = df.data_type .== "actual"
             forecast_mask = df.data_type .== "forecast"
             forecast_rev = df[cap_mask.&forecast_mask.&lk_mask, :revenue]
+            forecast_neg_rev = df[cap_mask.&forecast_mask.&lk_mask, :neg_revenue]
             pf_rev = df[
                 cap_mask.&forecast_mask.&(df.lookahead.=="Perfect Foresight"),
                 :revenue,
             ]
             pi_rev = df[cap_mask.&actual_mask.&lk_mask, :revenue]
+            pi_neg_rev = df[cap_mask.&actual_mask.&lk_mask, :neg_revenue]
             v_pl = pi_rev - forecast_rev
             v_pi = pf_rev - forecast_rev
             v_pl_percentage_pf = @. v_pl / pf_rev * 100
             v_pi_percentage_pf = @. v_pi / pf_rev * 100
+            ddm = @. (pi_neg_rev - forecast_neg_rev) / (pi_rev - forecast_rev) * 100
             push!(power_caps, cap)
             push!(data, lookahead)
             push!(v_pl_abs, v_pl[])
             push!(v_pi_abs, v_pi[])
             push!(v_pl_percentage, v_pl_percentage_pf[])
             push!(v_pi_percentage, v_pi_percentage_pf[])
+            push!(ddms, ddm[])
         end
     end
     return DataFrame(
@@ -171,6 +180,7 @@ function calculate_vpl_vpi(df::DataFrame)
         :vpi_abs => v_pi_abs,
         :vpl_per => v_pl_percentage,
         :vpi_per => v_pi_percentage,
+        :ddm => ddms,
     )
 end
 
@@ -201,7 +211,7 @@ function calculate_vpl_vpi_across_scenarios(summary_folder::String)
             match(r"([A-Z]{2,3})_summary_results.jld2", file).captures[]
         )
 
-        @info "Calculating VPL and VPI for $state"
+        @info "Calculating DDM, VPL and VPI for $state"
         summary_data = load(joinpath(summary_folder, file))
         vpl_vpi_data = DataFrame[]
         for (formulation, summary) in pairs(summary_data)
@@ -215,8 +225,8 @@ function calculate_vpl_vpi_across_scenarios(summary_folder::String)
             push!(vpl_vpi_data, vpl_vpi)
         end
         state_vpl_vpi = vcat(vpl_vpi_data...)
-        @info "Saving VPL and VPI data for $state"
-        jldopen(joinpath(summary_folder, "vpl_vpi.jld2"), "w"; compress=true) do f
+        @info "Saving DDM, VPL and VPI data for $state"
+        jldopen(joinpath(summary_folder, "ddm_vpl_vpi.jld2"), "w"; compress=true) do f
             f["$(state)"] = state_vpl_vpi
         end
     end
@@ -288,9 +298,9 @@ function calculate_summaries_and_vpl_vpi_across_scenarios(sim_folder::String)
             end
         end
     end
-    vpl_vpi_file_name = joinpath(save_path, "vpl_vpi.jld2")
-    if !isfile(vpl_vpi_file_name)
-        @info "Calculating VPL and VPI across scenarios"
+    ddm_vpl_vpi_file_name = joinpath(save_path, "ddm_vpl_vpi.jld2")
+    if !isfile(ddm_vpl_vpi_file_name)
+        @info "Calculating DDM, VPL and VPI across scenarios"
         calculate_vpl_vpi_across_scenarios(save_path)
     end
     return nothing
