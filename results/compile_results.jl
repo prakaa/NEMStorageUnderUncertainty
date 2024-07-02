@@ -1,5 +1,5 @@
 using NEMStorageUnderUncertainty
 
-NEMStorageUnderUncertainty.calculate_summaries_and_vpi_vpf_across_scenarios(
+NEMStorageUnderUncertainty.calculate_summaries_and_vpl_vpi_across_scenarios(
     "simulations"
 )
