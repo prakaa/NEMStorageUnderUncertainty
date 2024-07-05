@@ -32,6 +32,7 @@ end
 function simulate(
     storage::NEMStorageUnderUncertainty.StorageDevice,
     data::NEMStorageUnderUncertainty.ForecastData,
+    actual_price_df::DataFrame,
     binding::T,
     horizon::T;
     start_time::DateTime,
@@ -42,6 +43,7 @@ function simulate(
         optimizer,
         storage,
         data,
+        actual_price_df,
         NEMStorageUnderUncertainty.StandardArbitrage(),
         NEMStorageUnderUncertainty.NoDegradation();
         decision_start_time=start_time,
@@ -108,6 +110,7 @@ function simulate_forecast2021_StandardArb_NoDeg(power::Float64, energy::Float64
         results = simulate(
             storage,
             forecast_data,
+            convert(DataFrame, actual_data),
             Minute(5),
             horizon;
             start_time=start_time,
