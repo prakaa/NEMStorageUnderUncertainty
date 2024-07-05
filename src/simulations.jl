@@ -245,9 +245,9 @@ function _retrieve_results(
     end
     results = innerjoin(var_solns...; on=:simulated_time)
     results[:, :decision_time] .= decision_time
-    binding = results[binding_start .≤ results.simulated_time .≤ binding_end, :]
+    binding = results[binding_start.≤results.simulated_time.≤binding_end, :]
     binding[:, :status] .= "binding"
-    non_binding = results[binding_end .< results.simulated_time, :]
+    non_binding = results[binding_end.<results.simulated_time, :]
     non_binding[:, :status] .= "non binding"
     return non_binding, binding
 end
@@ -392,6 +392,29 @@ function simulate_storage_operation(
     return results_df
 end
 
+function _make_binding_prices_actual(
+    forecast_prices::Vector{Float64},
+    actual_price_df::DataFrame,
+    binding_start_index::Int,
+    binding_end_index::Int,
+    binding_start_time::DateTime,
+    binding_end_time::DateTime,
+)
+    sort!(actual_price_df, :times)
+    binding_period_index_length = binding_end_index - binding_start_index
+    binding_start_actual_index = only(
+        findall(x -> x == binding_start_time, actual_price_df.times)
+    )
+    binding_end_actual_index = binding_start_actual_index + binding_period_index_length
+    @assert actual_price_df[binding_end_actual_index, :times] == binding_end_time
+    actual_price_replacement = actual_price_df[
+        binding_start_actual_index:1:binding_end_actual_index, :prices
+    ]
+    adjusted_forecast_prices = copy(forecast_prices)
+    adjusted_forecast_prices[1:1:(1+binding_period_index_length)] = actual_price_replacement
+    return adjusted_forecast_prices
+end
+
 """
 Simulate storage operation using forecast data
 
@@ -421,6 +444,7 @@ function simulate_storage_operation(
     optimizer::OptimizerWithAttributes,
     storage::StorageDevice,
     data::ForecastData,
+    actual_price_df::DataFrame,
     model_formulation::StorageModelFormulation,
     degradation::DegradationModel;
     decision_start_time::DateTime,
@@ -465,10 +489,18 @@ function simulate_storage_operation(
         binding_end_time = forecasted_times[sim_period[:binding_end]]
         simulate_times = forecasted_times[sim_indices]
         simulate_prices = prices[sim_indices]
+        adjusted_simulate_prices = _make_binding_prices_actual(
+            simulate_prices,
+            actual_price_df,
+            sim_period[:binding_start],
+            sim_period[:binding_end],
+            binding_start_time,
+            binding_end_time
+        )
         m = run_model(
             optimizer,
             storage,
-            simulate_prices,
+            adjusted_simulate_prices,
             simulate_times,
             binding_end_time,
             data.τ,
