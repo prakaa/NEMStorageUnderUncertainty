@@ -116,7 +116,7 @@ end
 function plot_value_of_lookahead_and_information_across_formulations(
     data_path::String, save_path::String
 )
-    data_file = [f for f in readdir(data_path) if f == "vpl_vpi.jld2"][]
+    data_file = [f for f in readdir(data_path) if f == "ddm_vpl_vpi.jld2"][]
     all_data = load(joinpath(data_path, data_file))
     for (state, value) in pairs(all_data)
         energy = round(Int, unique(value.energy_capacity)[])
@@ -156,7 +156,7 @@ end
 function plot_value_of_lookahead_and_information_for_each_formulation(
     data_path::String, save_path::String
 )
-    data_file = [f for f in readdir(data_path) if f == "vpl_vpi.jld2"][]
+    data_file = [f for f in readdir(data_path) if f == "ddm_vpl_vpi.jld2"][]
     all_data = load(joinpath(data_path, data_file))
     scale = identity
     for (state, value) in pairs(all_data)
