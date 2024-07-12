@@ -771,10 +771,10 @@ uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
 
 [[deps.JLD2]]
-deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "Printf", "Reexport", "Requires", "TranscodingStreams", "UUIDs"]
-git-tree-sha1 = "aa6ffef1fd85657f4999030c52eaeec22a279738"
+deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "PrecompileTools", "Reexport", "Requires", "TranscodingStreams", "UUIDs", "Unicode"]
+git-tree-sha1 = "84642bc18a79d715b39d3724b03cbdd2e7d48c62"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.33"
+version = "0.4.49"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
