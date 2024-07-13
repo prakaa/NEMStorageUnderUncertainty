@@ -398,6 +398,10 @@ end
     all_actual_data = NEMStorageUnderUncertainty.get_all_actual_data(
         joinpath(@__DIR__, "test_data", "dispatch_price_for_forecast")
     )
+    actual_data = convert(
+        DataFrame,
+        NEMStorageUnderUncertainty.get_ActualData(all_actual_data, "NSW1", nothing)
+    )
     unaligned_forecast_data = NEMStorageUnderUncertainty.get_ForecastData(
         pd_df, p5_df, "NSW1", nothing, nothing
     )
@@ -420,11 +424,15 @@ end
     )
     decision_start_time = DateTime(2021, 1, 1, 12, 0, 0)
     decision_end_time = DateTime(2021, 1, 2, 2, 00, 0)
+    @testset "Test making binding prices actual" begin
+        
+    end
     @testset "Test single period" begin
         results = NEMStorageUnderUncertainty.simulate_storage_operation(
             optimizer_with_attributes(HiGHS.Optimizer),
             storage,
             aligned_forecast_data,
+            actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
             decision_start_time=decision_start_time,
@@ -489,6 +497,7 @@ end
             optimizer_with_attributes(HiGHS.Optimizer),
             storage,
             aligned_forecast_data,
+            actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
             decision_start_time=decision_start_time + Minute(20),
@@ -566,6 +575,7 @@ end
             optimizer_with_attributes(HiGHS.Optimizer),
             storage,
             aligned_forecast_data,
+            actual_data,
             NEMStorageUnderUncertainty.StandardArbitrage(),
             NEMStorageUnderUncertainty.NoDegradation();
             decision_start_time=decision_start_time + Minute(10),
