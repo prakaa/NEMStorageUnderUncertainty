@@ -32,8 +32,8 @@ end
 function simulate(
     storage::NEMStorageUnderUncertainty.StorageDevice,
     data::NEMStorageUnderUncertainty.ForecastData,
-    formulation::NEMStorageUnderUncertainty.ArbitrageThroughputPenalty,
     actual_price_df::DataFrame,
+    formulation::NEMStorageUnderUncertainty.ArbitrageThroughputPenalty,
     binding::T,
     horizon::T;
     start_time::DateTime,
