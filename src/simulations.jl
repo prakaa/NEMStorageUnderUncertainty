@@ -423,6 +423,7 @@ Simulate storage operation using forecast data
   * `optimizer`: A solver optimizer
   * `storage`: [`StorageDevice`](@ref)
   * `data`: [`ForecastData`](@ref)
+  * `actual_price_df`: [`ActualData`] converted to a DataFrame
   * `model_formulation`: A model formulation ([`StorageModelFormulation`](@ref))
   * `degradation`: A degradation model ([`DegradationModel`](@ref))
   * `decision_start_time`: Decision start time
