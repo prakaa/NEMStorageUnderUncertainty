@@ -48,7 +48,9 @@ Columns in summary output include:
   5. `lookahead` of the simulation in minutes
   6. `revenue`, which is the total annual net revenue of the simulated device in AUD
   7. `neg_revenue`, which is the total annual negative revenue in AUD (i.e. losses)
-  7. `mean_rel_gap`, which is the mean relative gap across all decision times
+  8. `neg_rev_discharge`, which is total neg. rev. from discharging
+  9. `neg_rev_charge_500`, which is the total neg. rev. from charging whilst price > 500 AUD
+  10. `mean_rel_gap`, which is the mean relative gap across all decision times
 
 # Arguments
 
@@ -66,6 +68,8 @@ function _summarise_simulations(
 )
     revenues = Float64[]
     neg_revenues = Float64[]
+    neg_rev_discharges = Float64[]
+    neg_rev_charge_500s = Float64[]
     bess_powers = Float64[]
     data_types = String[]
     lookaheads = Int64[]
@@ -77,11 +81,19 @@ function _summarise_simulations(
             lookahead_df = lookahead_df[lookahead_df.status.=="binding", :]
             revenue = sum(lookahead_df.revenue)
             neg_revenue = sum(lookahead_df[lookahead_df.revenue.<0.0, :revenue])
+            neg_rev_discharge = sum(lookahead_df[
+                lookahead_df.discharge_mw.>0.0.&&lookahead_df.revenue.<0.0, :revenue
+            ])
+            neg_rev_charge_500 = sum(lookahead_df[
+                lookahead_df.charge_mw.>0.0.&&lookahead_df.actual_price.>=500.0, :revenue
+            ])
             average_gap = mean(unique(lookahead_df, "decision_time").relative_gap)
             bess_power = string(match(r"([0-9\.]*)MW", split(key, "/")[2]).captures[])
             data_type = split(key, "/")[1]
             push!(revenues, float(revenue))
             push!(neg_revenues, float(neg_revenue))
+            push!(neg_rev_discharges, float(neg_rev_discharge))
+            push!(neg_rev_charge_500s, float(neg_rev_charge_500))
             push!(lookaheads, lookahead)
             push!(average_gaps, average_gap)
             push!(bess_powers, parse(Float64, bess_power))
@@ -96,6 +108,8 @@ function _summarise_simulations(
         :lookahead => string.(lookaheads),
         :revenue => revenues,
         :neg_revenue => neg_revenues,
+        :neg_rev_discharge => neg_rev_discharges,
+        :neg_rev_charge_500 => neg_rev_charge_500s,
         :mean_rel_gap => average_gaps,
     )
     summary_data = sort(summary_data, "power_capacity")
