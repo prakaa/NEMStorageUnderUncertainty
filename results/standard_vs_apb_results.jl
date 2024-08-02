@@ -20,7 +20,9 @@ function merge_summary_data(standard_data_path::String, apb_data_path::String)
         df_standard.formulation = fill(key, size(df_standard, 1))
         df_apb.formulation = fill(key, size(df_apb, 1))
         df_standard_forecast = df_standard[df_standard.data_type.=="forecast", :]
+        df_standard_forecast = df_standard_forecast[(df_standard_forecast.power_capacity.>=25.0).&(df_standard_forecast.power_capacity.<=400.0), :]
         df_apb_forecast = df_apb[df_apb.data_type.=="forecast", :]
+        df_apb_forecast = df_apb_forecast[(df_apb_forecast.power_capacity.>=25.0).&(df_apb_forecast.power_capacity.<=400.0), :]
         merged = innerjoin(
             df_standard_forecast,
             df_apb_forecast,
