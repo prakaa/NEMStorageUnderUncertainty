@@ -115,10 +115,12 @@ end
 
 """
 Produce negative revenue from charging metrics by storage duration
+
+Excludes lookahead of 5 minutes
 """
 function summarise_duration_metrics(all_metrics::Array{DataFrame})
     function _filter_results!(df::DataFrame)
-        filtered = df[df.lookahead.!=="Perfect Foresight", :]
+        filtered = df[(df.lookahead.!=="Perfect Foresight").&(df.lookahead.!=="5"), :]
         return filtered
     end
     duration_datalists = (DataFrame[], DataFrame[], DataFrame[], DataFrame[], DataFrame[])
@@ -144,8 +146,8 @@ function summarise_duration_metrics(all_metrics::Array{DataFrame})
     end
     return DataFrame(
         :duration => durations_hours,
-        :mean_neg_rev_charge_500_improvement => mean_charge_500_improvement,
-        :median_neg_rev_charge_500_improvement => median_charge_500_improvement,
+        :mean_neg_rev_charge_500_improvement_lkgt5 => mean_charge_500_improvement,
+        :median_neg_rev_charge_500_improvement_lkgt5 => median_charge_500_improvement,
     )
 end
 merged = merge_summary_data("results/data/NSW_summary_results.jld2", "results/data/actual-prices-binding/NSW_summary_results_apb.jld2")
