@@ -49,7 +49,7 @@ Columns in summary output include:
   6. `revenue`, which is the total annual net revenue of the simulated device in AUD
   7. `neg_revenue`, which is the total annual negative revenue in AUD (i.e. losses)
   8. `neg_rev_discharge`, which is total neg. rev. from discharging
-  9. `neg_rev_charge_500`, which is the total neg. rev. from charging whilst price > 500 AUD
+  9. `neg_rev_charge_500`, which is the total neg. rev. from charging whilst price ≥ 500 AUD
   10. `mean_rel_gap`, which is the mean relative gap across all decision times
 
 # Arguments
