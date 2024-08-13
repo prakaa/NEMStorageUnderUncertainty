@@ -8,6 +8,12 @@ const SCENARIO_COLS = [
     :formulation, :energy_capacity, :power_capacity, :data_type, :lookahead
 ]
 
+"""
+Merge APB variant summary data into standard forecast simulation summary data
+
+Drop 1:8 and 8:1 power ratios
+
+"""
 function merge_summary_data(standard_data_path::String, apb_data_path::String)
     for path in (standard_data_path, apb_data_path)
         @assert isfile(path)
@@ -68,9 +74,12 @@ function calculate_metrics(all_merged_data::Array{DataFrame})
     return all_metrics
 end
 
-function summarise_metrics(all_metrics::Array{DataFrame})
+"""
+Produce revenue improvement and negative revenue metrics by formulation
+"""
+function summarise_formulation_metrics(all_metrics::Array{DataFrame})
     function _filter_results!(df::DataFrame)
-        filtered = df[df.lookahead.!=="Perfect Foresight".&&df.power_capacity.>12.5.&&df.power_capacity.<800, :]
+        filtered = df[df.lookahead.!=="Perfect Foresight", :]
         return filtered
     end
     formulations = String[]
@@ -104,7 +113,50 @@ function summarise_metrics(all_metrics::Array{DataFrame})
     )
 end
 
+"""
+Produce negative revenue from charging metrics by storage duration
+"""
+function summarise_duration_metrics(all_metrics::Array{DataFrame})
+    function _filter_results!(df::DataFrame)
+        filtered = df[df.lookahead.!=="Perfect Foresight", :]
+        return filtered
+    end
+    duration_datalists = (DataFrame[], DataFrame[], DataFrame[], DataFrame[], DataFrame[])
+    durations_hours = Float64[]
+    mean_charge_500_improvement = Float64[]
+    median_charge_500_improvement = Float64[]
+    for (power_cap, duration_data) in zip((25.0 * 2^x for x in 0:1:4), duration_datalists)
+        for df in all_metrics
+            filtered_df = _filter_results!(df)
+            push!(duration_data, filtered_df[filtered_df.power_capacity.==power_cap, :])
+        end
+        duration_df = vcat(duration_data...)
+        duration_df.duration = @. duration_df.energy_capacity / duration_df.power_capacity
+        push!(durations_hours, only(unique(duration_df.duration)))
+        push!(mean_charge_500_improvement, mean(
+            duration_df.neg_rev_charge_500_standard .- duration_df.neg_rev_charge_500_apb
+        )
+        )
+        push!(median_charge_500_improvement, median(
+            duration_df.neg_rev_charge_500_standard .- duration_df.neg_rev_charge_500_apb
+        )
+        )
+    end
+    return DataFrame(
+        :duration => durations_hours,
+        :mean_neg_rev_charge_500_improvement => mean_charge_500_improvement,
+        :median_neg_rev_charge_500_improvement => median_charge_500_improvement,
+    )
+end
 merged = merge_summary_data("results/data/NSW_summary_results.jld2", "results/data/actual-prices-binding/NSW_summary_results_apb.jld2")
 metrics = calculate_metrics(merged)
-summary = summarise_metrics(metrics)
-CSV.write("results/data/actual-prices-binding/rev_and_negrev_standard_vs_apb.csv", summary)
+formulation_summary = summarise_formulation_metrics(metrics)
+duration_charge_improvement_summary = summarise_duration_metrics(metrics)
+CSV.write(
+    "results/data/actual-prices-binding/rev_and_negrev_standard_vs_apb.csv",
+    formulation_summary
+)
+CSV.write(
+    "results/data/actual-prices-binding/negrev_charge_improvement_by_duration.csv",
+    duration_charge_improvement_summary
+)
