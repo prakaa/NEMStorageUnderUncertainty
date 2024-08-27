@@ -74,6 +74,8 @@ All charts produced from the analysis of simulation results can be found [here](
 - [This chart](results/plots/vpl_vpi/NSW_100_allformulations_vpl_vpi.pdf) shows VPLs and VPIs for BESS with durations of 15 minutes, 1 hour and 4 hours across lookaheads and modelled formulations
 - [This chart](results/plots/throughput/NSW_100_arbitrage_throughputpenalty_no_degradation_600000_throughputs.pdf) shows the cumulative throughput of BES with durations of 15 minutes, 1 hour and 4 hours (all with modelled throughput penalty that amortises a BESS capital cost of 600,000 AUD/MWh across BESS lifetime throughput) across the modelled year (2021).
 
+"Actual prices in binding" results are located in [results/data/actual-prices-binding](results/data/actual-prices-binding).
+
 ### Source code installation
 
 #### Julia environment
