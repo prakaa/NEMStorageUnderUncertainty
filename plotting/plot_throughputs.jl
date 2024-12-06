@@ -76,7 +76,7 @@ function _plot_throughputs(
     )
     linkaxes!(axes...)
     Label(fig[0, :]; text=title, fontsize=22, font="Source Sans Pro")
-    fig.content[1].ylabel = "Cumulative Throughput (MWh)"
+    fig.content[1].ylabel = "Total throughput (MWh)"
     trim!(fig.layout)
     return fig
 end
